@@ -1,55 +1,67 @@
 ---
-name: deploy-marketplay
-description: Orquestador avanzado de despliegue para La Imaginaria. Gestiona el ciclo completo de Build, Análisis Proactivo de Cerebro (project-brain), y Sincronización multi-remoto (Origin/Marketplay).
+name: deploy-app
+description: Orquestador agnóstico de compilación, sincronización de ramas Git (main y prod) y despliegue a producción en el remoto origin.
 ---
 
-# Deploy Marketplay (Orquestador Pro)
+# Deploy App Skill (Orquestador de Despliegue Genérico)
 
-Este skill automatiza y asegura el proceso de despliegue a producción, garantizando que el código sea estable y que la memoria operativa del sistema esté sincronizada con el estándar de `project-brain`.
+Este skill automatiza y reglamenta el proceso que un agente **DEBE** seguir para compilar, sincronizar ramas de control en Git (`main` y `prod` en el remoto `origin`) y realizar despliegues en caliente de forma segura para cualquier aplicación web SPA o estática.
 
-## Flujo Operativo Estricto
+---
 
-### 1. Validación Pre-Vuelo (Obligatorio)
-Antes de tocar Git, el agente **DEBE** asegurar que el código es válido.
-- Comando: `npm run build; npm run lint`
-- **Bloqueo**: Si hay errores de compilación o linting, el agente debe corregirlos antes de avanzar.
+## Flujo Operativo Estricto para el Agente
 
-### 2. Auditoría y Sincronización del Cerebro (project-brain)
-Invocación obligatoria del skill `project-brain` para asegurar que el conocimiento del proyecto esté actualizado antes de ser persistido.
-- **Acción (Auditoría)**: Ejecutar un análisis proactivo de los cambios realizados en el código. Si se modificaron arquitecturas, modelos de datos (ej. estados de tickets) o estilos, se DEBE actualizar la carpeta `.brain/` (`architecture.md`, `decision_log.md`, etc.).
-- **Acción (Memoria)**: Mantener actualizado `MEMORY.md` para un resumen cronológico rápido de hitos.
-- **Acción (Versionado)**: El sistema utiliza un formato `X-YYYY`. 
-  - **X**: Número de versión principal (solo cambia si el usuario lo autoriza).
-  - **YYYY**: Contador de revisiones de 4 dígitos (se incrementa automáticamente en cada despliegue).
-- **Acción (DB Sync)**: Se ejecutará `scripts/sync-db-version.ts` para calcular el siguiente release basándose en el historial de la DB y actualizar los campos `version_back` y `release_back` en la tabla `system.settings`.
-- **Acción (Changelog)**: Generar el historial de cambios mediante `powershell -ExecutionPolicy Bypass -File scripts/generate-changelog.ps1`, inyectando el release `X-YYYY` generado.
-- **Acción (Commit Operativo)**: Realizar el commit usando Conventional Commits (ej. `feat: deployment release 1-0012`).
+### 1. Validación de Pre-vuelo (Obligatorio)
+Antes de realizar cualquier cambio en el historial de Git, el agente debe garantizar que el estado actual de la aplicación compila perfectamente y cumple los estándares del proyecto.
+*   **Comando sugerido**: `npm run build` o `npm run lint` (según se configure en el proyecto).
+*   **Regla de Bloqueo**: Si hay errores de compilación o análisis estático, el agente **DEBE** corregirlos antes de proceder con el despliegue.
 
-### 3. Distribución Multi-Remoto (Rama Main)
-Sincronización del desarrollo base.
-- Comando: `git push origin main; git push marketplay main`
+### 2. Configuración y Parámetros Operativos
+El agente debe inspeccionar si en la raíz del proyecto existe un archivo de configuración `deploy.config.json`.
+*   Si existe: Utilizar los nombres de rama (`branches.dev`, `branches.prod`), remoto (`remote`), y comandos de compilación y despliegue configurados allí.
+*   Si no existe: Asumir por defecto la rama de desarrollo `main`, la rama de producción `prod`, el servidor remoto `origin`, y el compilado en la carpeta `dist/`.
 
-### 4. Despliegue a Producción (Rama Prod)
-Este paso desencadena el despliegue automático en Cloud Run.
-- **Autorización**: Si no ha sido autorizada previamente por el usuario, preguntar antes de proceder.
-- Comando: `git checkout prod; git merge main; git push origin prod; git push marketplay prod; git checkout main`
+### 3. Historial de Cambios (Changelog)
+Antes del commit de despliegue, el agente debe verificar que las nuevas características, refactorizaciones y correcciones del día estén descritas en el archivo `CHANGELOG.md` siguiendo el estándar *Keep a Changelog*.
 
-### 5. Verificación de Estado y Reporte Final
-- Comando: `git remote update; git status`
-- **Obligatorio**: El agente debe finalizar el turno mostrando un cuadro resumen con:
-  - **Estatus**: ✅ EXITOSO
-  - **Versión Backend**: vX.X.X
-  - **Revisión Backend**: X-YYYY (numeric)
+### 4. Sincronización y Fusión en Origin (Rama de Desarrollo)
+Sincronizar los últimos commits del desarrollo local con el repositorio remoto.
+*   **Paso 1**: Asegurar que está posicionado en la rama de desarrollo (ej. `main`).
+*   **Paso 2**: Empujar commits locales al remoto:
+    ```bash
+    git push origin main
+    ```
 
-## Reglas de Oro
-- **Nunca** desplegar a `prod` si el paso de `build` falló.
-- **Siempre** invocar `project-brain` para auditar el estado del proyecto antes de un push.
-- **Siempre** utilizar `scripts/deploy.ps1` para el flujo de despliegue a producción.
-- **Siempre** regresar a la rama `main` tras finalizar.
-- **MEMORIA INMORTAL**: NUNCA borres información histórica de `MEMORY.md` ni de `.brain/`. Los nuevos hitos deben PREPENDERSE (añadirse al inicio). Si ya existe una entrada para el **mismo día**, puedes actualizarla para reflejar los nuevos cambios realizados, pero SIEMPRE preservando y acumulando la información previa de ese día. La historia operativa es sagrada y acumulativa.
+### 5. Despliegue de Producción (Rama de Producción)
+Llevar a cabo la integración y el despliegue físico.
+*   **Paso 1**: Cambiar a la rama de producción estable:
+    ```bash
+    git checkout prod
+    ```
+*   **Paso 2**: Asegurar sincronía con cambios remotos previos:
+    ```bash
+    git pull origin prod
+    ```
+*   **Paso 3**: Mezclar de forma limpia el desarrollo consolidado en producción:
+    ```bash
+    git merge main -m "merge: fusionar avances del ciclo de desarrollo en la rama de produccion de forma automatizada"
+    ```
+*   **Paso 4**: Empujar los cambios a producción al servidor central:
+    ```bash
+    git push origin prod
+    ```
+*   **Paso 5 (Despliegue)**: Ejecutar el comando de compilación (`npm run build` o el configurado en `deploy.config.json`) y el comando de subida a hosting (ej. `npx wrangler pages deploy dist`, `firebase deploy` o invocando el script interactivo local `.\scripts\deploy.ps1`).
 
-## Troubleshooting
-Si un push es rechazado por conflictos:
-1. `git pull origin main --rebase`
-2. Resolver conflictos.
-3. Reiniciar el flujo de validación.
+### 6. Restauración del Espacio de Trabajo
+Por seguridad del flujo de desarrollo, el agente **SIEMPRE** debe regresar a la rama de trabajo principal al finalizar el turno:
+```bash
+git checkout main
+```
+
+---
+
+## Reglas de Oro para el Agente
+1.  **Cero Tolerancia a Fallos**: NUNCA fusiones ni empujes cambios a la rama `prod` si el comando de compilación local falla.
+2.  **Sincronización Transparente**: Asegúrate de que el remoto `origin` tenga siempre la última versión de ambas ramas para evitar bifurcaciones huérfanas.
+3.  **Persistencia del Estado**: Siempre finaliza tu turno reportando al usuario el estado del despliegue (Éxito / Fallo) y la URL asignada por el proveedor.
+4.  **No Interrupción**: Utilice los scripts locales provistos (`deploy.ps1`) para sortear restricciones de entornos sandboxed donde no sea posible realizar autenticaciones OAuth web automáticas.
