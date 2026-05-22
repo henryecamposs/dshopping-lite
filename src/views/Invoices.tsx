@@ -8,8 +8,11 @@ import { useInvoiceStore } from '../store/invoiceStore';
 import { InvoiceForm } from '../components/InvoiceForm';
 import { ExportModal } from '../components/ExportModal';
 import { PrintPreviewModal } from '../components/PrintPreviewModal';
-import { Plus, Receipt, Search, FileText, CheckCircle, Trash2, Calendar, Printer, Edit, MoreVertical, Download } from 'lucide-react';
-import { Invoice } from '../types';
+import { RetentionForm } from '../components/retentions/RetentionForm';
+import { PaymentForm } from '../components/payments/PaymentForm';
+import { PrintRetentionModal } from '../components/retentions/PrintRetentionModal';
+import { Plus, Receipt, Search, FileText, CheckCircle, Trash2, Calendar, Printer, Edit, MoreVertical, Download, ShieldCheck, Wallet, Landmark } from 'lucide-react';
+import { Invoice, InvoiceRetention } from '../types';
 import Swal from 'sweetalert2';
 
 
@@ -25,6 +28,12 @@ export const Invoices: React.FC = () => {
   const [isExportOpen, setIsExportOpen] = useState<boolean>(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState<boolean>(false);
   const [selectedInvoiceForPreview, setSelectedInvoiceForPreview] = useState<Invoice | null>(null);
+  
+  // Nuevos estados para retenciones y pagos
+  const [retentionInvoice, setRetentionInvoice] = useState<Invoice | null>(null);
+  const [paymentInvoice, setPaymentInvoice] = useState<Invoice | null>(null);
+  const [retentionToPrint, setRetentionToPrint] = useState<InvoiceRetention | null>(null);
+  const [isPrintRetentionOpen, setIsPrintRetentionOpen] = useState<boolean>(false);
 
 
   useEffect(() => {
@@ -203,7 +212,22 @@ export const Invoices: React.FC = () => {
                           <p className="truncate max-w-[200px]">{inv.provider_name}</p>
                           <span className="text-[10px] font-mono text-primary">Control: {inv.control_number}</span>
                         </td>
-                        <td className="px-6 py-4 font-mono font-medium">{inv.invoice_number}</td>
+                        <td className="px-6 py-4 font-mono font-medium">
+                          {inv.invoice_number}
+                          {inv.invoice_retentions && inv.invoice_retentions.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1 font-sans">
+                              {inv.invoice_retentions.map(r => (
+                                <span key={r.id} className={`px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider rounded ${
+                                  r.type === 'IVA'
+                                    ? 'bg-indigo-50 border border-indigo-200 text-indigo-700 dark:bg-indigo-950/20 dark:text-indigo-400 dark:border-indigo-900/40'
+                                    : 'bg-purple-50 border border-purple-200 text-purple-700 dark:bg-purple-950/20 dark:text-purple-400 dark:border-purple-900/40'
+                                }`}>
+                                  {r.type} Ret
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </td>
                         <td className="px-6 py-4">
                           <p className="font-mono text-xs">{inv.invoice_date}</p>
                           <p className="text-[10px] text-muted-foreground font-semibold">{inv.credit_days} días de crédito</p>
@@ -221,6 +245,11 @@ export const Invoices: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 font-mono font-bold text-right text-primary">
                           {formatCurrencyUSD(inv.total_invoice)}
+                          {inv.net_payable !== undefined && inv.net_payable !== inv.total_invoice && (
+                            <p className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold" title="Neto a pagar descontando retenciones">
+                              Neto: {formatCurrencyUSD(inv.net_payable)}
+                            </p>
+                          )}
                         </td>
                         <td className="px-6 py-4 font-mono font-bold text-right text-emerald-600 dark:text-emerald-400">
                           {/* MONTO CAMBIARIO REGISTRADO EN LA FACTURA */}
@@ -229,7 +258,13 @@ export const Invoices: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 text-center">
                           <button
-                            onClick={() => handleMarkAsPaid(inv.id, inv.status)}
+                            onClick={() => {
+                              if (inv.status === 'pending') {
+                                setPaymentInvoice(inv);
+                              } else {
+                                handleMarkAsPaid(inv.id, inv.status);
+                              }
+                            }}
                             className={`px-3 py-1 rounded-full text-xs font-bold uppercase cursor-pointer transition-all border ${
                               inv.status === 'paid'
                                 ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20'
@@ -269,6 +304,47 @@ export const Invoices: React.FC = () => {
                                     <Printer size={14} />
                                     Imprimir
                                   </button>
+                                  
+                                  {inv.status === 'pending' && (
+                                    <>
+                                      <button
+                                        onClick={() => {
+                                          setActiveDropdownId(null);
+                                          setPaymentInvoice(inv);
+                                        }}
+                                        className="w-full px-3 py-2 hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:dark:bg-emerald-950/40 flex items-center gap-2 transition-colors cursor-pointer text-left font-semibold"
+                                      >
+                                        <Wallet size={14} />
+                                        Registrar Pago
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          setActiveDropdownId(null);
+                                          setRetentionInvoice(inv);
+                                        }}
+                                        className="w-full px-3 py-2 hover:bg-indigo-500/10 text-indigo-650 dark:text-indigo-400 hover:dark:bg-indigo-950/40 flex items-center gap-2 transition-colors cursor-pointer text-left font-semibold"
+                                      >
+                                        <ShieldCheck size={14} />
+                                        Retención
+                                      </button>
+                                    </>
+                                  )}
+
+                                  {inv.invoice_retentions && inv.invoice_retentions.map(r => (
+                                    <button
+                                      key={r.id}
+                                      onClick={() => {
+                                        setActiveDropdownId(null);
+                                        setRetentionToPrint(r);
+                                        setIsPrintRetentionOpen(true);
+                                      }}
+                                      className="w-full px-3 py-2 hover:bg-purple-500/10 text-purple-650 dark:text-purple-400 hover:dark:bg-purple-950/40 flex items-center gap-2 transition-colors cursor-pointer text-left font-semibold"
+                                    >
+                                      <Landmark size={14} />
+                                      Imp. Ret. {r.type}
+                                    </button>
+                                  ))}
+
                                   <button
                                     onClick={() => {
                                       setActiveDropdownId(null);
@@ -322,6 +398,51 @@ export const Invoices: React.FC = () => {
         invoice={selectedInvoiceForPreview}
         providers={providers}
       />
+
+      {/* MODALES DE RETENCIONES Y PAGOS */}
+      {retentionInvoice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
+          <RetentionForm
+            companyId={company?.id || ''}
+            invoiceId={retentionInvoice.id}
+            invoiceData={retentionInvoice}
+            onSuccess={() => {
+              setRetentionInvoice(null);
+              if (company?.id) fetchInvoices(company.id);
+            }}
+            onCancel={() => setRetentionInvoice(null)}
+          />
+        </div>
+      )}
+
+      {paymentInvoice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
+          <PaymentForm
+            companyId={company?.id || ''}
+            providerId={paymentInvoice.provider_id}
+            invoiceId={paymentInvoice.id}
+            amountDue={paymentInvoice.net_payable ?? paymentInvoice.total_invoice}
+            onSuccess={() => {
+              setPaymentInvoice(null);
+              if (company?.id) fetchInvoices(company.id);
+            }}
+            onCancel={() => setPaymentInvoice(null)}
+          />
+        </div>
+      )}
+
+      {isPrintRetentionOpen && retentionToPrint && (
+        <PrintRetentionModal
+          isOpen={isPrintRetentionOpen}
+          onClose={() => {
+            setIsPrintRetentionOpen(false);
+            setRetentionToPrint(null);
+          }}
+          retention={retentionToPrint}
+          invoice={invoices.find(i => i.id === retentionToPrint.invoice_id) || null}
+          provider={providers.find(p => p.id === (invoices.find(i => i.id === retentionToPrint.invoice_id)?.provider_id)) || null}
+        />
+      )}
     </div>
   );
 };

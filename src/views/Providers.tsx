@@ -5,8 +5,9 @@ import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useInvoiceStore } from '../store/invoiceStore';
 import { ExportModal } from '../components/ExportModal';
-import { Plus, Users, Search, AlertCircle, Save, Edit, Trash2, ArrowLeft, Download } from 'lucide-react';
+import { Plus, Users, Search, AlertCircle, Save, Edit, Trash2, ArrowLeft, Download, Landmark } from 'lucide-react';
 import Swal from 'sweetalert2';
+import { ProviderBankModal } from '../components/providers/ProviderBankModal';
 
 
 export const Providers: React.FC = () => {
@@ -17,11 +18,13 @@ export const Providers: React.FC = () => {
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
   const [providerToEdit, setProviderToEdit] = useState<any | null>(null);
   const [isExportOpen, setIsExportOpen] = useState<boolean>(false);
+  const [bankModalProvider, setBankModalProvider] = useState<any | null>(null);
 
   
-  // Estados para nuevo proveedor
   const [name, setName] = useState<string>('');
   const [rif, setRif] = useState<string>('');
+  const [isTaxpayer, setIsTaxpayer] = useState<boolean>(false);
+  const [ivaRetentionPercentage, setIvaRetentionPercentage] = useState<75 | 100>(75);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
 
@@ -35,11 +38,15 @@ export const Providers: React.FC = () => {
     if (providerToEdit) {
       setName(providerToEdit.name);
       setRif(providerToEdit.rif);
+      setIsTaxpayer(providerToEdit.is_taxpayer || false);
+      setIvaRetentionPercentage(providerToEdit.iva_retention_percentage || 75);
       setError(null);
       setSuccess(false);
     } else {
       setName('');
       setRif('');
+      setIsTaxpayer(false);
+      setIvaRetentionPercentage(75);
     }
   }, [providerToEdit]);
 
@@ -62,9 +69,9 @@ export const Providers: React.FC = () => {
 
     let res;
     if (providerToEdit) {
-      res = await updateProvider(providerToEdit.id, name, rif);
+      res = await updateProvider(providerToEdit.id, name, rif, isTaxpayer, ivaRetentionPercentage);
     } else {
-      res = await createProvider(company.id, name, rif);
+      res = await createProvider(company.id, name, rif, isTaxpayer, ivaRetentionPercentage);
     }
 
     if (res.success) {
@@ -226,6 +233,37 @@ export const Providers: React.FC = () => {
                 required
               />
             </div>
+            
+            {/* Nuevos Campos SENIAT */}
+            <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2 p-4 bg-muted/20 border border-border-main rounded-xl">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="isTaxpayer"
+                  checked={isTaxpayer}
+                  onChange={(e) => setIsTaxpayer(e.target.checked)}
+                  className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                />
+                <label htmlFor="isTaxpayer" className="text-sm font-semibold text-text-main cursor-pointer">
+                  Es Contribuyente Especial SENIAT
+                </label>
+              </div>
+              
+              {isTaxpayer && (
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">% Retención IVA</label>
+                  <select
+                    value={ivaRetentionPercentage}
+                    onChange={(e) => setIvaRetentionPercentage(Number(e.target.value) as 75 | 100)}
+                    className="input-premium w-full text-sm"
+                  >
+                    <option value={75}>75%</option>
+                    <option value={100}>100%</option>
+                  </select>
+                </div>
+              )}
+            </div>
+
             <div className="sm:col-span-2 flex justify-end gap-2 pt-2">
               <button
                 type="button"
@@ -284,6 +322,13 @@ export const Providers: React.FC = () => {
                     {/* Botones de acción rápidos */}
                     <div className="flex gap-1">
                       <button
+                        onClick={() => setBankModalProvider(provider)}
+                        className="p-1.5 text-indigo-500 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-all cursor-pointer inline-flex"
+                        title="Cuentas Bancarias"
+                      >
+                        <Landmark size={14} />
+                      </button>
+                      <button
                         onClick={() => {
                           setProviderToEdit(provider);
                           window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -304,6 +349,11 @@ export const Providers: React.FC = () => {
                   </div>
                   <h4 className="text-base font-bold text-text-main line-clamp-2">{provider.name}</h4>
                   <p className="text-xs font-mono text-primary/95 dark:text-primary mt-1 uppercase tracking-wider">{provider.rif}</p>
+                  {provider.is_taxpayer && (
+                    <span className="inline-block mt-2 px-2 py-0.5 bg-rose-100 text-rose-800 border border-rose-200 text-[10px] font-bold rounded-md">
+                      CONTRIBUYENTE ESPECIAL ({provider.iva_retention_percentage}%)
+                    </span>
+                  )}
                 </div>
                 <div className="mt-4 pt-3 border-t border-border-main text-[10px] text-muted-foreground font-mono">
                   Registrado: {new Date(provider.created_at).toLocaleDateString()}
@@ -320,6 +370,14 @@ export const Providers: React.FC = () => {
         dataType="providers"
         data={filteredProviders}
         providersList={providers}
+      />
+
+      <ProviderBankModal
+        isOpen={bankModalProvider !== null}
+        onClose={() => setBankModalProvider(null)}
+        companyId={company?.id || ''}
+        providerId={bankModalProvider?.id || ''}
+        providerName={bankModalProvider?.name || ''}
       />
     </div>
   );

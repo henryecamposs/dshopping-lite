@@ -8,10 +8,12 @@ import { useInvoiceStore } from './invoiceStore';
 
 interface ExchangeState {
   currentRate: ExchangeRate | null;
+  history: ExchangeRate[];
   loading: boolean;
   error: string | null;
   
   fetchCurrentRate: (companyId: string) => Promise<number>;
+  fetchHistory: (companyId: string) => Promise<void>;
   updateCurrentRate: (companyId: string, rateValue: number) => Promise<boolean>;
   fetchLiveBCVRate: () => Promise<{ success: boolean; rate?: number; error?: string }>;
   
@@ -23,6 +25,7 @@ interface ExchangeState {
 
 export const useExchangeStore = create<ExchangeState>((set, get) => ({
   currentRate: null,
+  history: [],
   loading: false,
   error: null,
 
@@ -51,6 +54,23 @@ export const useExchangeStore = create<ExchangeState>((set, get) => ({
     } catch (err: any) {
       set({ error: err.message, loading: false });
       return 45.00; // Tasa de respaldo ante errores
+    }
+  },
+
+  // Obtener historial de tasas
+  fetchHistory: async (companyId) => {
+    set({ loading: true, error: null });
+    try {
+      const { data, error } = await supabase
+        .from('exchange_rates')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('date', { ascending: false });
+
+      if (error) throw error;
+      set({ history: data || [], loading: false });
+    } catch (err: any) {
+      set({ error: err.message, loading: false });
     }
   },
 

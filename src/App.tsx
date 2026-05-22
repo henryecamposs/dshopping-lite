@@ -9,6 +9,11 @@ import { Dashboard } from './views/Dashboard';
 import { Invoices } from './views/Invoices';
 import { Providers } from './views/Providers';
 import { Reports } from './views/Reports';
+import { PriceTagGenerator } from './views/Utilities/PriceTags/PriceTagGenerator';
+import { ShiftCalendar } from './views/Utilities/Shifts/ShiftCalendar';
+import { BankReconciliation } from './views/BankReconciliation';
+import { PaymentHistory } from './views/PaymentHistory';
+import { PaymentMethods } from './views/PaymentMethods';
 import { Building2 } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -46,6 +51,11 @@ export const App: React.FC = () => {
       {currentView === 'invoices' && <Invoices />}
       {currentView === 'providers' && <Providers />}
       {currentView === 'reports' && <Reports />}
+      {currentView === 'reconciliation' && <BankReconciliation />}
+      {currentView === 'payment-history' && <PaymentHistory />}
+      {currentView === 'payment-methods' && <PaymentMethods />}
+      {currentView === 'price-tags' && <PriceTagGenerator />}
+      {currentView === 'shifts' && <ShiftCalendar />}
     </Layout>
   );
 };

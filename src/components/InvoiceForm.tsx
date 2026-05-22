@@ -29,6 +29,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoiceToEdit, onSucce
   const [baseTaxable, setBaseTaxable] = useState<string>('0.00');
   const [baseExempt, setBaseExempt] = useState<string>('0.00');
   const [ivaPercentage, setIvaPercentage] = useState<number>(16);
+  const [observation, setObservation] = useState<string>('');
   
   // Estados para cálculos derivados en pantalla (tiempo real)
   const [calculatedDueDate, setCalculatedDueDate] = useState<string>('');
@@ -57,6 +58,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoiceToEdit, onSucce
       setBaseTaxable(invoiceToEdit.base_taxable.toFixed(2));
       setBaseExempt(invoiceToEdit.base_exempt.toFixed(2));
       setIvaPercentage(invoiceToEdit.iva_percentage);
+      setObservation(invoiceToEdit.observation || '');
     } else {
       setProviderId('');
       setInvoiceNumber('');
@@ -66,6 +68,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoiceToEdit, onSucce
       setBaseTaxable('0.00');
       setBaseExempt('0.00');
       setIvaPercentage(16);
+      setObservation('');
     }
   }, [invoiceToEdit]);
 
@@ -164,6 +167,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoiceToEdit, onSucce
         base_taxable: parseFloat(baseTaxable) || 0,
         base_exempt: parseFloat(baseExempt) || 0,
         iva_percentage: ivaPercentage,
+        observation: observation,
       });
     } else {
       res = await createInvoice({
@@ -177,7 +181,8 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoiceToEdit, onSucce
         base_exempt: parseFloat(baseExempt) || 0,
         iva_percentage: ivaPercentage,
         exchange_rate_at_invoice: currentRate?.rate_value || 45.00,
-        status: 'pending' // Estado inicial por defecto de cuenta por pagar
+        status: 'pending', // Estado inicial por defecto de cuenta por pagar
+        observation: observation,
       });
     }
 
@@ -350,6 +355,17 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoiceToEdit, onSucce
                 placeholder="0"
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+             <label className="text-sm font-semibold text-muted-foreground">Observación / Notas</label>
+             <input
+               type="text"
+               value={observation}
+               onChange={(e) => setObservation(e.target.value)}
+               className="input-premium w-full"
+               placeholder="Ej: Pago pendiente en DIVISA, Retención pendiente..."
+             />
           </div>
 
           {/* IMPORTES FINANCIEROS */}

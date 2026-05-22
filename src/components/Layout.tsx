@@ -17,7 +17,12 @@ import {
   Building2,
   Sun,
   Moon,
-  RefreshCw
+  RefreshCw,
+  Tags,
+  CalendarDays,
+  Landmark,
+  Clock,
+  CreditCard
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 
@@ -178,12 +183,35 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }
     }
   };
 
-  const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'invoices', label: 'Facturas', icon: Receipt },
-    { id: 'providers', label: 'Proveedores', icon: Users },
-    { id: 'reports', label: 'Reportes', icon: FileText }
+  const navGroups = [
+    {
+      category: 'FACTURACIÓN',
+      items: [
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'invoices', label: 'Facturas', icon: Receipt },
+        { id: 'providers', label: 'Proveedores', icon: Users },
+      ]
+    },
+    {
+      category: 'BANCOS & PAGOS',
+      items: [
+        { id: 'reconciliation', label: 'Cuentas Corrientes', icon: Landmark },
+        { id: 'payment-history', label: 'Histórico de Pagos', icon: Clock },
+        { id: 'payment-methods', label: 'Métodos de Pago', icon: CreditCard }
+      ]
+    },
+    {
+      category: 'UTILIDADES',
+      items: [
+        { id: 'reports', label: 'Reportes', icon: FileText },
+        { id: 'price-tags', label: 'Habladores', icon: Tags },
+        { id: 'shifts', label: 'Turnos', icon: CalendarDays }
+      ]
+    }
   ];
+
+  // Aplanar los items para uso fácil donde se requiera encontrar uno por id
+  const flatNavItems = navGroups.flatMap(group => group.items);
 
   return (
     <div className="min-h-screen flex bg-bg-main text-text-main transition-colors duration-300">
@@ -201,25 +229,34 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }
         </div>
 
         {/* NAVEGACIÓN */}
-        <nav className="flex-1 p-4 space-y-1.5">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = currentView === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setView(item.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 cursor-pointer ${
-                  isActive 
-                    ? 'bg-primary/10 text-primary border-l-4 border-primary' 
-                    : 'text-muted-foreground hover:bg-muted/20 hover:text-text-main'
-                }`}
-              >
-                <Icon size={20} />
-                {item.label}
-              </button>
-            );
-          })}
+        <nav className="flex-1 p-4 overflow-y-auto space-y-6">
+          {navGroups.map((group) => (
+            <div key={group.category}>
+              <p className="px-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">
+                {group.category}
+              </p>
+              <div className="space-y-1">
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = currentView === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setView(item.id)}
+                      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium transition-all duration-200 cursor-pointer ${
+                        isActive 
+                          ? 'bg-primary/10 text-primary border-l-4 border-primary' 
+                          : 'text-muted-foreground hover:bg-muted/20 hover:text-text-main'
+                      }`}
+                    >
+                      <Icon size={18} />
+                      <span className="text-sm">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         {/* PERFIL DE USUARIO & EMPRESA */}
@@ -264,7 +301,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }
           {/* Nombre de la sección */}
           <div className="hidden md:block">
             <h2 className="text-lg font-bold capitalize">
-              {navItems.find(n => n.id === currentView)?.label}
+              {flatNavItems.find(n => n.id === currentView)?.label || currentView}
             </h2>
           </div>
 
@@ -360,28 +397,37 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }
               </div>
 
               {/* NAVEGACIÓN MÓVIL */}
-              <nav className="flex-1 space-y-2">
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = currentView === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => {
-                        setView(item.id);
-                        setIsMobileMenuOpen(false);
-                      }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all cursor-pointer ${
-                        isActive 
-                          ? 'bg-primary text-white shadow-md shadow-primary/20' 
-                          : 'text-muted-foreground hover:bg-muted/20 hover:text-text-main'
-                      }`}
-                    >
-                      <Icon size={20} />
-                      {item.label}
-                    </button>
-                  );
-                })}
+              <nav className="flex-1 overflow-y-auto space-y-6">
+                {navGroups.map((group) => (
+                  <div key={group.category}>
+                    <p className="px-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">
+                      {group.category}
+                    </p>
+                    <div className="space-y-1">
+                      {group.items.map((item) => {
+                        const Icon = item.icon;
+                        const isActive = currentView === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            onClick={() => {
+                              setView(item.id);
+                              setIsMobileMenuOpen(false);
+                            }}
+                            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium transition-all cursor-pointer ${
+                              isActive 
+                                ? 'bg-primary text-white shadow-md shadow-primary/20' 
+                                : 'text-muted-foreground hover:bg-muted/20 hover:text-text-main'
+                            }`}
+                          >
+                            <Icon size={18} />
+                            <span className="text-sm">{item.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </nav>
 
               {/* PERFIL MÓVIL */}

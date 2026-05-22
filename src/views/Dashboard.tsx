@@ -1,10 +1,12 @@
 // dShopping Lite - Vista del Dashboard Principal
-// Agrupación destacada de facturas que vencen hoy/mañana y resumen de cuentas por pagar
+// Agrupación destacada de facturas que vencen hoy/manñana y resumen de cuentas por pagar
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useExchangeStore } from '../store/exchangeStore';
 import { useInvoiceStore } from '../store/invoiceStore';
+import { PaymentForm } from '../components/payments/PaymentForm';
+import { Invoice } from '../types';
 import { 
   TrendingUp, 
   AlertCircle, 
@@ -13,7 +15,8 @@ import {
   DollarSign, 
   Clock, 
   FileText,
-  Check
+  Check,
+  CalendarDays
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 
@@ -29,6 +32,8 @@ export const Dashboard: React.FC = () => {
     updateInvoiceStatus,
     loading 
   } = useInvoiceStore();
+
+  const [paymentInvoice, setPaymentInvoice] = useState<Invoice | null>(null);
 
   useEffect(() => {
     if (company?.id) {
@@ -67,6 +72,19 @@ export const Dashboard: React.FC = () => {
   // Listados específicos
   const todayInvoices = getTodayInvoices();
   const tomorrowInvoices = getTomorrowInvoices();
+
+  // Facturas por vencer en los próximos 5 días
+  const expiringIn5DaysInvoices = invoices.filter(inv => {
+    if (inv.status !== 'pending') return false;
+    const invDate = new Date(inv.due_date);
+    const today = new Date(todayStr);
+    const next5Days = new Date(today);
+    next5Days.setDate(today.getDate() + 5);
+    return invDate >= today && invDate <= next5Days;
+  });
+
+  const totalExpiring5DaysUSD = expiringIn5DaysInvoices.reduce((sum, inv) => sum + inv.total_invoice, 0);
+  const totalExpiring5DaysBs = convertToLocalCurrency(totalExpiring5DaysUSD);
 
   const handleMarkAsPaid = async (id: string) => {
     const isDarkMode = document.documentElement.classList.contains('dark');
@@ -130,7 +148,7 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* METRICAS - TARJETAS FINANCIERAS DE ALTO IMPACTO ESTÉTICO */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         
         {/* TOTAL CUENTAS POR PAGAR PENDIENTES */}
         <div className="glass-card rounded-3xl p-6 relative overflow-hidden">
@@ -144,10 +162,10 @@ export const Dashboard: React.FC = () => {
             </span>
           </div>
           <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Total Pendiente (Divisas)</p>
-          <p className="text-2xl font-black text-text-main mt-1 font-mono">{formatCurrencyUSD(totalPendingUSD)}</p>
+          <p className="text-xl font-black text-text-main mt-1 font-mono">{formatCurrencyUSD(totalPendingUSD)}</p>
           
           <div className="mt-4 pt-3 border-t border-border-main flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">Monto en Moneda Local</span>
+            <span className="text-xs text-muted-foreground">Monto Local</span>
             <span className="text-sm font-extrabold text-primary font-mono">{formatCurrencyLocal(totalPendingBs)}</span>
           </div>
         </div>
@@ -163,12 +181,32 @@ export const Dashboard: React.FC = () => {
               Crítico
             </span>
           </div>
-          <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Total Vencido (Vencido hoy)</p>
-          <p className="text-2xl font-black text-rose-600 dark:text-rose-400 mt-1 font-mono">{formatCurrencyUSD(totalExpiredUSD)}</p>
+          <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Total Vencido</p>
+          <p className="text-xl font-black text-rose-600 dark:text-rose-400 mt-1 font-mono">{formatCurrencyUSD(totalExpiredUSD)}</p>
           
           <div className="mt-4 pt-3 border-t border-border-main flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">Monto en Moneda Local</span>
+            <span className="text-xs text-muted-foreground">Monto Local</span>
             <span className="text-sm font-extrabold text-rose-700 dark:text-rose-300 font-mono">{formatCurrencyLocal(totalExpiredBs)}</span>
+          </div>
+        </div>
+
+        {/* ALERTA PRÓXIMOS 5 DÍAS */}
+        <div className="glass-card rounded-3xl p-6 relative overflow-hidden border-l-4 border-l-amber-500/50">
+          <div className="absolute top-0 right-0 h-32 w-32 bg-gradient-to-br from-amber-500/5 to-transparent rounded-full blur-2xl"></div>
+          <div className="flex justify-between items-start mb-4">
+            <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 p-3 rounded-2xl text-amber-600 dark:text-amber-400 animate-pulse">
+              <CalendarDays size={24} />
+            </div>
+            <span className="text-[10px] font-bold bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2.5 py-1 rounded-full uppercase tracking-wider">
+              En 5 Días
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Por Vencer (Próx. 5 Días)</p>
+          <p className="text-xl font-black text-amber-600 dark:text-amber-400 mt-1 font-mono">{formatCurrencyUSD(totalExpiring5DaysUSD)}</p>
+          
+          <div className="mt-4 pt-3 border-t border-border-main flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Monto Local</span>
+            <span className="text-sm font-extrabold text-amber-700 dark:text-amber-300 font-mono">{formatCurrencyLocal(totalExpiring5DaysBs)}</span>
           </div>
         </div>
 
@@ -180,15 +218,15 @@ export const Dashboard: React.FC = () => {
               <CheckCircle size={24} />
             </div>
             <span className="text-[10px] font-bold bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-full uppercase tracking-wider">
-              Completado
+              Pagados
             </span>
           </div>
-          <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Total Pagado ($)</p>
-          <p className="text-2xl font-black text-text-main mt-1 font-mono">{formatCurrencyUSD(totalPaidUSD)}</p>
+          <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Total Pagado</p>
+          <p className="text-xl font-black text-text-main mt-1 font-mono">{formatCurrencyUSD(totalPaidUSD)}</p>
           
           <div className="mt-4 pt-3 border-t border-border-main flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">Monto en Moneda Local</span>
-            <span className="text-sm font-extrabold text-emerald-650 dark:text-emerald-400 font-mono">{formatCurrencyLocal(totalPaidBs)}</span>
+            <span className="text-xs text-muted-foreground">Monto Local</span>
+            <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400 font-mono">{formatCurrencyLocal(totalPaidBs)}</span>
           </div>
         </div>
 
@@ -235,9 +273,9 @@ export const Dashboard: React.FC = () => {
                       </p>
                     </div>
                     <button
-                      onClick={() => handleMarkAsPaid(inv.id)}
+                      onClick={() => setPaymentInvoice(inv)}
                       className="h-8 w-8 bg-amber-500/10 hover:bg-amber-500/30 text-amber-600 dark:text-amber-400 rounded-lg flex items-center justify-center transition-colors cursor-pointer"
-                      title="Marcar como pagada"
+                      title="Registrar Pago"
                     >
                       <Check size={16} />
                     </button>
@@ -282,9 +320,9 @@ export const Dashboard: React.FC = () => {
                       </p>
                     </div>
                     <button
-                      onClick={() => handleMarkAsPaid(inv.id)}
+                      onClick={() => setPaymentInvoice(inv)}
                       className="h-8 w-8 bg-primary/10 hover:bg-primary/30 text-primary rounded-lg flex items-center justify-center transition-colors cursor-pointer"
-                      title="Marcar como pagada"
+                      title="Registrar Pago"
                     >
                       <Check size={16} />
                     </button>
@@ -346,7 +384,7 @@ export const Dashboard: React.FC = () => {
                         <td className="px-6 py-4 font-mono font-bold text-right text-emerald-600 dark:text-emerald-400">{formatCurrencyLocal(localVal)}</td>
                         <td className="px-6 py-4 text-center">
                           <button
-                            onClick={() => handleMarkAsPaid(inv.id)}
+                            onClick={() => setPaymentInvoice(inv)}
                             className="bg-primary hover:opacity-90 text-white text-xs px-3 py-1.5 rounded-lg font-medium cursor-pointer transition-all"
                           >
                             Pagar
@@ -361,6 +399,22 @@ export const Dashboard: React.FC = () => {
         )}
       </div>
 
+      {/* MODAL DE PAGOS INTERACTIVOS */}
+      {paymentInvoice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
+          <PaymentForm
+            companyId={company?.id || ''}
+            providerId={paymentInvoice.provider_id}
+            invoiceId={paymentInvoice.id}
+            amountDue={paymentInvoice.net_payable ?? paymentInvoice.total_invoice}
+            onSuccess={() => {
+              setPaymentInvoice(null);
+              if (company?.id) fetchInvoices(company.id);
+            }}
+            onCancel={() => setPaymentInvoice(null)}
+          />
+        </div>
+      )}
     </div>
   );
 };

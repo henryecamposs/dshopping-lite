@@ -26,8 +26,8 @@ interface InvoiceState {
   resetFilters: () => void;
   
   fetchProviders: (companyId: string) => Promise<void>;
-  createProvider: (companyId: string, name: string, rif: string) => Promise<{ success: boolean; data?: Provider; error?: string }>;
-  updateProvider: (providerId: string, name: string, rif: string) => Promise<{ success: boolean; data?: Provider; error?: string }>;
+  createProvider: (companyId: string, name: string, rif: string, is_taxpayer?: boolean, iva_retention_percentage?: 75|100) => Promise<{ success: boolean; data?: Provider; error?: string }>;
+  updateProvider: (providerId: string, name: string, rif: string, is_taxpayer?: boolean, iva_retention_percentage?: 75|100) => Promise<{ success: boolean; data?: Provider; error?: string }>;
   deleteProvider: (providerId: string) => Promise<{ success: boolean; error?: string }>;
   
   fetchInvoices: (companyId: string) => Promise<void>;
@@ -85,11 +85,11 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
   },
 
   // 2. Crear Proveedor
-  createProvider: async (companyId, name, rif) => {
+  createProvider: async (companyId, name, rif, is_taxpayer = false, iva_retention_percentage) => {
     try {
       const { data, error } = await supabase
         .from('providers')
-        .insert({ company_id: companyId, name, rif: rif.trim().toUpperCase() })
+        .insert({ company_id: companyId, name, rif: rif.trim().toUpperCase(), is_taxpayer, iva_retention_percentage })
         .select()
         .single();
 
@@ -107,11 +107,11 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
   },
 
   // 2.5. Actualizar Proveedor
-  updateProvider: async (providerId, name, rif) => {
+  updateProvider: async (providerId, name, rif, is_taxpayer = false, iva_retention_percentage) => {
     try {
       const { data, error } = await supabase
         .from('providers')
-        .update({ name, rif: rif.trim().toUpperCase() })
+        .update({ name, rif: rif.trim().toUpperCase(), is_taxpayer, iva_retention_percentage })
         .eq('id', providerId)
         .select()
         .single();
@@ -151,7 +151,7 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
     }
   },
 
-  // 3. Obtener Facturas (con JOIN para obtener el nombre del proveedor)
+  // 3. Obtener Facturas (con JOIN para obtener el nombre del proveedor y retenciones)
   fetchInvoices: async (companyId) => {
     set({ loading: true, error: null });
     try {
@@ -161,6 +161,17 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
           *,
           providers (
             name
+          ),
+          invoice_retentions (
+            id,
+            invoice_id,
+            company_id,
+            type,
+            retention_percentage,
+            retention_amount,
+            correlative_number,
+            islr_concept,
+            created_at
           )
         `)
         .eq('company_id', companyId)
@@ -171,7 +182,8 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
       // Transformar para aplanar el nombre del proveedor
       const formattedInvoices: Invoice[] = (data || []).map((inv: any) => ({
         ...inv,
-        provider_name: inv.providers?.name || 'Proveedor Desconocido'
+        provider_name: inv.providers?.name || 'Proveedor Desconocido',
+        invoice_retentions: inv.invoice_retentions || []
       }));
 
       set({ invoices: formattedInvoices, loading: false });
