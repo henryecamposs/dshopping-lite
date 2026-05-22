@@ -8,7 +8,9 @@ import { Invoice, Provider } from '../types';
 interface InvoiceFilters {
   providerId: string;
   status: 'all' | 'pending' | 'paid';
-  dueDateRange: 'all' | 'today' | 'tomorrow' | 'week' | 'month' | 'expired';
+  dueDateRange: 'all' | 'today' | 'tomorrow' | 'week' | 'month' | 'expired' | 'custom';
+  customStartDate?: string;
+  customEndDate?: string;
   searchTerm: string;
 }
 
@@ -25,6 +27,8 @@ interface InvoiceState {
   
   fetchProviders: (companyId: string) => Promise<void>;
   createProvider: (companyId: string, name: string, rif: string) => Promise<{ success: boolean; data?: Provider; error?: string }>;
+  updateProvider: (providerId: string, name: string, rif: string) => Promise<{ success: boolean; data?: Provider; error?: string }>;
+  deleteProvider: (providerId: string) => Promise<{ success: boolean; error?: string }>;
   
   fetchInvoices: (companyId: string) => Promise<void>;
   createInvoice: (invoiceData: Omit<Invoice, 'id' | 'created_at' | 'sub_total' | 'iva_amount' | 'total_invoice' | 'due_date'>) => Promise<{ success: boolean; data?: Invoice; error?: string }>;
@@ -43,6 +47,8 @@ const initialFilters: InvoiceFilters = {
   providerId: 'all',
   status: 'all',
   dueDateRange: 'all',
+  customStartDate: '',
+  customEndDate: '',
   searchTerm: ''
 };
 
@@ -95,6 +101,51 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
       }));
       
       return { success: true, data };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  },
+
+  // 2.5. Actualizar Proveedor
+  updateProvider: async (providerId, name, rif) => {
+    try {
+      const { data, error } = await supabase
+        .from('providers')
+        .update({ name, rif: rif.trim().toUpperCase() })
+        .eq('id', providerId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      // Actualizar estado en memoria
+      set((state) => ({
+        providers: state.providers.map((p) => p.id === providerId ? data : p).sort((a, b) => a.name.localeCompare(b.name)),
+        invoices: state.invoices.map((inv) => inv.provider_id === providerId ? { ...inv, provider_name: data.name } : inv)
+      }));
+      
+      return { success: true, data };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  },
+
+  // 2.6. Eliminar Proveedor
+  deleteProvider: async (providerId) => {
+    try {
+      const { error } = await supabase
+        .from('providers')
+        .delete()
+        .eq('id', providerId);
+
+      if (error) throw error;
+      
+      // Actualizar estado en memoria
+      set((state) => ({
+        providers: state.providers.filter((p) => p.id !== providerId),
+      }));
+      
+      return { success: true };
     } catch (err: any) {
       return { success: false, error: err.message };
     }
@@ -369,6 +420,10 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
             break;
           case 'expired':
             if (invDate >= today || inv.status === 'paid') return false;
+            break;
+          case 'custom':
+            if (filters.customStartDate && inv.due_date < filters.customStartDate) return false;
+            if (filters.customEndDate && inv.due_date > filters.customEndDate) return false;
             break;
         }
       }

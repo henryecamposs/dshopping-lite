@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useExchangeStore } from '../store/exchangeStore';
 import { useInvoiceStore } from '../store/invoiceStore';
+import { ExportModal } from '../components/ExportModal';
 import { 
   FileSpreadsheet, 
   Printer, 
@@ -14,7 +15,8 @@ import {
   ChevronDown, 
   CalendarClock,
   TrendingUp,
-  Receipt
+  Receipt,
+  Download
 } from 'lucide-react';
 
 export const Reports: React.FC = () => {
@@ -30,6 +32,8 @@ export const Reports: React.FC = () => {
     fetchProviders, 
     getFilteredInvoices 
   } = useInvoiceStore();
+
+  const [isExportOpen, setIsExportOpen] = useState<boolean>(false);
 
   useEffect(() => {
     if (company?.id) {
@@ -93,8 +97,8 @@ export const Reports: React.FC = () => {
       inv.iva_percentage,
       inv.iva_amount,
       inv.total_invoice,
-      inv.exchange_rate_at_invoice,
-      (inv.total_invoice * inv.exchange_rate_at_invoice).toFixed(2),
+      currentRate?.rate_value || inv.exchange_rate_at_invoice,
+      (inv.total_invoice * (currentRate?.rate_value || inv.exchange_rate_at_invoice)).toFixed(2),
       inv.status.toUpperCase()
     ]);
 
@@ -134,7 +138,7 @@ export const Reports: React.FC = () => {
       <div className="print-header">
         <h1>dShopping Lite — Reporte Financiero de Compras</h1>
         <p><strong>Empresa:</strong> {company?.name} | RIF: {company?.rif}</p>
-        <p><strong>Fecha de Emisión del Reporte:</strong> {new Date().toLocaleDateString()} | <strong>Tasa Cambiaria Hoy:</strong> {currentRate?.rate_value.toFixed(2)} Bs/$</p>
+        <p><strong>Fecha de Emisión del Reporte:</strong> {new Date().toLocaleDateString()} | <strong>Tasa Cambiaria Hoy:</strong> {(currentRate?.rate_value || 45.00).toFixed(2)} Bs/$</p>
       </div>
 
       {/* CABECERA (Pantalla) */}
@@ -145,94 +149,121 @@ export const Reports: React.FC = () => {
         </div>
         <div className="flex flex-wrap gap-3">
           <button
-            onClick={exportToExcel}
+            onClick={handlePrint}
             className="btn-secondary text-xs"
           >
-            <FileSpreadsheet size={16} className="text-emerald-400" />
-            Exportar Excel (CSV)
+            <Printer size={16} className="text-primary" />
+            Imprimir Pantalla
           </button>
           <button
-            onClick={handlePrint}
+            onClick={() => setIsExportOpen(true)}
             className="btn-primary text-xs"
           >
-            <Printer size={16} />
-            Imprimir Reporte (PDF)
+            <Download size={16} />
+            Exportar Reporte
           </button>
         </div>
       </div>
 
       {/* PANEL DE FILTROS AVANZADOS (Pantalla) */}
-      <div className="glass-card rounded-3xl p-6 grid grid-cols-1 sm:grid-cols-4 gap-4 items-end no-print">
-        {/* Proveedor */}
-        <div className="space-y-2">
-          <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Proveedor</label>
-          <select
-            value={filters.providerId}
-            onChange={(e) => setFilter('providerId', e.target.value)}
-            className="input-premium w-full text-xs"
-          >
-            <option value="all">Todos los Proveedores</option>
-            {providers.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Estado */}
-        <div className="space-y-2">
-          <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Estado de Pago</label>
-          <select
-            value={filters.status}
-            onChange={(e) => setFilter('status', e.target.value)}
-            className="input-premium w-full text-xs"
-          >
-            <option value="all">Cualquier Estado</option>
-            <option value="pending">Pendiente (Por Pagar)</option>
-            <option value="paid">Pagado (Cerrado)</option>
-          </select>
-        </div>
-
-        {/* Rango de Vencimiento */}
-        <div className="space-y-2">
-          <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Vencimiento</label>
-          <select
-            value={filters.dueDateRange}
-            onChange={(e) => setFilter('dueDateRange', e.target.value)}
-            className="input-premium w-full text-xs"
-          >
-            <option value="all">Todas las Fechas</option>
-            <option value="today">Vencen Hoy</option>
-            <option value="tomorrow">Vencen Mañana</option>
-            <option value="week">Próximos 7 días</option>
-            <option value="month">Próximos 30 días</option>
-            <option value="expired">Vencidas (Sin pagar)</option>
-          </select>
-        </div>
-
-        {/* Botón de Reset */}
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <span className="absolute left-3 top-3 text-muted-foreground">
-              <Search size={14} />
-            </span>
-            <input
-              type="text"
-              value={filters.searchTerm}
-              onChange={(e) => setFilter('searchTerm', e.target.value)}
-              className="input-premium w-full pl-9 text-xs"
-              placeholder="Buscar..."
-            />
+      <div className="glass-card rounded-3xl p-6 no-print">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
+          {/* Proveedor */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Proveedor</label>
+            <select
+              value={filters.providerId}
+              onChange={(e) => setFilter('providerId', e.target.value)}
+              className="input-premium w-full text-xs"
+            >
+              <option value="all">Todos los Proveedores</option>
+              {providers.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
           </div>
-          <button
-            onClick={resetFilters}
-            className="p-2.5 bg-muted/20 hover:bg-muted/35 text-muted-foreground hover:text-text-main rounded-xl border border-border-main transition-colors"
-            title="Restablecer Filtros"
-          >
-            <RefreshCw size={14} />
-          </button>
+
+          {/* Estado */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Estado de Pago</label>
+            <select
+              value={filters.status}
+              onChange={(e) => setFilter('status', e.target.value)}
+              className="input-premium w-full text-xs"
+            >
+              <option value="all">Cualquier Estado</option>
+              <option value="pending">Pendiente (Por Pagar)</option>
+              <option value="paid">Pagado (Cerrado)</option>
+            </select>
+          </div>
+
+          {/* Rango de Vencimiento */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Vencimiento</label>
+            <select
+              value={filters.dueDateRange}
+              onChange={(e) => setFilter('dueDateRange', e.target.value)}
+              className="input-premium w-full text-xs"
+            >
+              <option value="all">Todas las Fechas</option>
+              <option value="today">Vencen Hoy</option>
+              <option value="tomorrow">Vencen Mañana</option>
+              <option value="week">Próximos 7 días</option>
+              <option value="month">Próximos 30 días</option>
+              <option value="expired">Vencidas (Sin pagar)</option>
+              <option value="custom">Rango de Fechas</option>
+            </select>
+          </div>
+
+          {/* Botón de Reset */}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <span className="absolute left-3 top-3 text-muted-foreground">
+                <Search size={14} />
+              </span>
+              <input
+                type="text"
+                value={filters.searchTerm}
+                onChange={(e) => setFilter('searchTerm', e.target.value)}
+                className="input-premium w-full pl-9 text-xs"
+                placeholder="Buscar..."
+              />
+            </div>
+            <button
+              onClick={resetFilters}
+              className="p-2.5 bg-muted/20 hover:bg-muted/35 text-muted-foreground hover:text-text-main rounded-xl border border-border-main transition-colors"
+              title="Restablecer Filtros"
+            >
+              <RefreshCw size={14} />
+            </button>
+          </div>
         </div>
+
+        {/* Rango de Fechas Personalizado */}
+        {filters.dueDateRange === 'custom' && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 pt-4 border-t border-border-main animate-in fade-in slide-in-from-top-2 duration-250">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Fecha Inicio</label>
+              <input
+                type="date"
+                value={filters.customStartDate || ''}
+                onChange={(e) => setFilter('customStartDate', e.target.value)}
+                className="input-premium w-full text-xs font-mono"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Fecha Fin</label>
+              <input
+                type="date"
+                value={filters.customEndDate || ''}
+                onChange={(e) => setFilter('customEndDate', e.target.value)}
+                className="input-premium w-full text-xs font-mono"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* RESUMEN DE TOTALES FILTRADOS (Impresión y Pantalla) */}
@@ -280,7 +311,8 @@ export const Reports: React.FC = () => {
               <tbody className="divide-y divide-border-main bg-muted/10 dark:bg-muted/5">
                 {filteredData.map((inv) => {
                   const rif = providers.find(p => p.id === inv.provider_id)?.rif || 'S/N';
-                  const localVal = inv.total_invoice * inv.exchange_rate_at_invoice;
+                  const activeRate = currentRate?.rate_value || inv.exchange_rate_at_invoice;
+                  const localVal = inv.total_invoice * activeRate;
                   return (
                     <tr key={inv.id} className="hover:bg-muted/30 transition-colors">
                       <td className="px-6 py-4 font-semibold text-text-main print-text-dark">
@@ -315,6 +347,15 @@ export const Reports: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* MODAL DE EXPORTACIÓN UNIFICADO */}
+      <ExportModal
+        isOpen={isExportOpen}
+        onClose={() => setIsExportOpen(false)}
+        dataType="invoices"
+        data={filteredData}
+        providersList={providers}
+      />
     </div>
   );
 };

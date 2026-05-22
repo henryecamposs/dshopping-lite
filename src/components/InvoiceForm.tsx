@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useExchangeStore } from '../store/exchangeStore';
 import { useInvoiceStore } from '../store/invoiceStore';
-import { Save, Plus, AlertCircle, Calendar } from 'lucide-react';
+import { Save, Plus, AlertCircle, Calendar, ArrowLeft } from 'lucide-react';
 import { Invoice } from '../types';
 import Swal from 'sweetalert2';
 
@@ -213,6 +213,16 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoiceToEdit, onSucce
       {/* FORMULARIO */}
       <div className="lg:col-span-2 glass-card rounded-3xl p-6 md:p-8">
         <h3 className="text-xl font-bold text-text-main mb-6 flex items-center gap-2">
+          {invoiceToEdit && (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="p-1.5 hover:bg-muted/35 rounded-xl text-muted-foreground hover:text-text-main transition-colors mr-1 cursor-pointer inline-flex items-center justify-center border border-border-main"
+              title="Volver"
+            >
+              <ArrowLeft size={18} />
+            </button>
+          )}
           <span>{invoiceToEdit ? 'Editar Factura' : 'Registrar Nueva Factura'}</span>
         </h3>
 

@@ -231,7 +231,7 @@ export const Dashboard: React.FC = () => {
                     <div className="text-right">
                       <p className="text-sm font-extrabold text-text-main font-mono">{formatCurrencyUSD(inv.total_invoice)}</p>
                       <p className="text-xs font-black text-amber-600 dark:text-amber-400 font-mono" title="Monto en Bolívares al cambio de la factura">
-                        {formatCurrencyLocal(inv.total_invoice * inv.exchange_rate_at_invoice)}
+                        {formatCurrencyLocal(inv.total_invoice * (currentRate?.rate_value || inv.exchange_rate_at_invoice))}
                       </p>
                     </div>
                     <button
@@ -278,7 +278,7 @@ export const Dashboard: React.FC = () => {
                     <div className="text-right">
                       <p className="text-sm font-extrabold text-text-main font-mono">{formatCurrencyUSD(inv.total_invoice)}</p>
                       <p className="text-xs font-black text-primary font-mono">
-                        {formatCurrencyLocal(inv.total_invoice * inv.exchange_rate_at_invoice)}
+                        {formatCurrencyLocal(inv.total_invoice * (currentRate?.rate_value || inv.exchange_rate_at_invoice))}
                       </p>
                     </div>
                     <button
@@ -328,7 +328,7 @@ export const Dashboard: React.FC = () => {
                   .filter(i => i.status === 'pending')
                   .slice(0, 5) // Mostrar máximo 5
                   .map((inv) => {
-                    const localVal = inv.total_invoice * inv.exchange_rate_at_invoice;
+                    const localVal = inv.total_invoice * (currentRate?.rate_value || inv.exchange_rate_at_invoice);
                     const isExpired = inv.due_date < todayStr;
                     return (
                       <tr key={inv.id} className="hover:bg-muted/30 transition-colors">

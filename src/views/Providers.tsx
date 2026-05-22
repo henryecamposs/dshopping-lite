@@ -4,14 +4,20 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useInvoiceStore } from '../store/invoiceStore';
-import { Plus, Users, Search, AlertCircle, Save } from 'lucide-react';
+import { ExportModal } from '../components/ExportModal';
+import { Plus, Users, Search, AlertCircle, Save, Edit, Trash2, ArrowLeft, Download } from 'lucide-react';
+import Swal from 'sweetalert2';
+
 
 export const Providers: React.FC = () => {
   const { company } = useAuthStore();
-  const { providers, fetchProviders, createProvider, loading } = useInvoiceStore();
+  const { providers, fetchProviders, createProvider, updateProvider, deleteProvider, loading } = useInvoiceStore();
 
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
+  const [providerToEdit, setProviderToEdit] = useState<any | null>(null);
+  const [isExportOpen, setIsExportOpen] = useState<boolean>(false);
+
   
   // Estados para nuevo proveedor
   const [name, setName] = useState<string>('');
@@ -24,6 +30,18 @@ export const Providers: React.FC = () => {
       fetchProviders(company.id);
     }
   }, [company?.id, fetchProviders]);
+
+  useEffect(() => {
+    if (providerToEdit) {
+      setName(providerToEdit.name);
+      setRif(providerToEdit.rif);
+      setError(null);
+      setSuccess(false);
+    } else {
+      setName('');
+      setRif('');
+    }
+  }, [providerToEdit]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,17 +60,80 @@ export const Providers: React.FC = () => {
       return;
     }
 
-    const res = await createProvider(company.id, name, rif);
+    let res;
+    if (providerToEdit) {
+      res = await updateProvider(providerToEdit.id, name, rif);
+    } else {
+      res = await createProvider(company.id, name, rif);
+    }
+
     if (res.success) {
       setSuccess(true);
       setName('');
       setRif('');
       // Recargar lista
       fetchProviders(company.id);
-      setTimeout(() => setShowAddForm(false), 1500);
+      if (providerToEdit) {
+        Swal.fire({
+          title: '¡Actualizado!',
+          text: 'El proveedor ha sido actualizado exitosamente.',
+          icon: 'success',
+          confirmButtonColor: '#8b5cf6',
+          background: document.documentElement.classList.contains('dark') ? '#1e1b4b' : '#ffffff',
+          color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#1f2937',
+          timer: 2000,
+          showConfirmButton: false
+        });
+        setProviderToEdit(null);
+      } else {
+        setTimeout(() => setShowAddForm(false), 1500);
+      }
     } else {
-      setError(res.error || 'Ocurrió un error al registrar el proveedor.');
+      setError(res.error || 'Ocurrió un error al guardar el proveedor.');
     }
+  };
+
+  const handleDeleteProvider = async (providerId: string, providerName: string) => {
+    const isDark = document.documentElement.classList.contains('dark');
+    
+    Swal.fire({
+      title: '¿Eliminar Proveedor?',
+      text: `¿Está seguro de que desea ELIMINAR al proveedor "${providerName}"? Esta operación podría afectar facturas asociadas.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#ef4444', // Rojo
+      cancelButtonColor: '#4b5563', // Gris
+      background: isDark ? '#1e1b4b' : '#ffffff',
+      color: isDark ? '#f3f4f6' : '#1f2937',
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        const res = await deleteProvider(providerId);
+        if (res.success) {
+          Swal.fire({
+            title: '¡Eliminado!',
+            text: 'El proveedor ha sido eliminado del sistema.',
+            icon: 'success',
+            confirmButtonColor: '#8b5cf6',
+            background: isDark ? '#1e1b4b' : '#ffffff',
+            color: isDark ? '#f3f4f6' : '#1f2937',
+            timer: 2000,
+            showConfirmButton: false
+          });
+          if (company?.id) fetchProviders(company.id);
+        } else {
+          Swal.fire({
+            title: 'Error',
+            text: res.error || 'Ocurrió un error al eliminar al proveedor.',
+            icon: 'error',
+            confirmButtonColor: '#ef4444',
+            background: isDark ? '#1e1b4b' : '#ffffff',
+            color: isDark ? '#f3f4f6' : '#1f2937',
+          });
+        }
+      }
+    });
   };
 
   const filteredProviders = providers.filter(
@@ -69,23 +150,45 @@ export const Providers: React.FC = () => {
           <h2 className="text-2xl font-bold text-text-main tracking-tight">Proveedores Registrados</h2>
           <p className="text-muted-foreground text-sm">Administre los datos de contacto y facturación fiscal de sus proveedores.</p>
         </div>
-        <button
-          onClick={() => {
-            setShowAddForm(!showAddForm);
-            setError(null);
-            setSuccess(false);
-          }}
-          className="btn-primary"
-        >
-          <Plus size={18} />
-          Nuevo Proveedor
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setIsExportOpen(true)}
+            className="btn-secondary text-xs flex items-center gap-2"
+          >
+            <Download size={16} />
+            Exportar Datos
+          </button>
+          <button
+            onClick={() => {
+              setShowAddForm(!showAddForm);
+              setProviderToEdit(null);
+              setError(null);
+              setSuccess(false);
+            }}
+            className="btn-primary"
+          >
+            <Plus size={18} />
+            Nuevo Proveedor
+          </button>
+        </div>
       </div>
 
-      {/* FORMULARIO DE CREACIÓN */}
-      {showAddForm && (
-        <div className="glass-card rounded-3xl p-6 max-w-2xl border border-primary/20">
-          <h3 className="text-lg font-bold text-text-main mb-4">Registrar Proveedor</h3>
+      {/* FORMULARIO DE CREACIÓN / EDICIÓN */}
+      {(showAddForm || providerToEdit !== null) && (
+        <div className="glass-card rounded-3xl p-6 max-w-2xl border border-primary/20 animate-in fade-in slide-in-from-top-2 duration-200">
+          <h3 className="text-lg font-bold text-text-main mb-4 flex items-center gap-2">
+            {providerToEdit && (
+              <button
+                type="button"
+                onClick={() => setProviderToEdit(null)}
+                className="p-1.5 hover:bg-muted/35 rounded-xl text-muted-foreground hover:text-text-main transition-colors mr-1 cursor-pointer inline-flex items-center justify-center border border-border-main"
+                title="Volver"
+              >
+                <ArrowLeft size={16} />
+              </button>
+            )}
+            <span>{providerToEdit ? 'Editar Proveedor' : 'Registrar Proveedor'}</span>
+          </h3>
           
           {error && (
             <div className="bg-rose-500/5 dark:bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-300 px-4 py-2.5 rounded-xl mb-4 flex items-center gap-2 text-xs">
@@ -96,7 +199,7 @@ export const Providers: React.FC = () => {
 
           {success && (
             <div className="bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-300 px-4 py-2.5 rounded-xl mb-4 text-xs font-semibold">
-              ¡Proveedor registrado con éxito!
+              {providerToEdit ? '¡Proveedor actualizado con éxito!' : '¡Proveedor registrado con éxito!'}
             </div>
           )}
 
@@ -126,7 +229,10 @@ export const Providers: React.FC = () => {
             <div className="sm:col-span-2 flex justify-end gap-2 pt-2">
               <button
                 type="button"
-                onClick={() => setShowAddForm(false)}
+                onClick={() => {
+                  setShowAddForm(false);
+                  setProviderToEdit(null);
+                }}
                 className="btn-secondary py-2 text-xs"
               >
                 Cancelar
@@ -136,7 +242,7 @@ export const Providers: React.FC = () => {
                 className="btn-primary py-2 text-xs"
               >
                 <Save size={14} />
-                Guardar Proveedor
+                {providerToEdit ? 'Guardar Cambios' : 'Guardar Proveedor'}
               </button>
             </div>
           </form>
@@ -171,8 +277,30 @@ export const Providers: React.FC = () => {
                 className="glass-card p-5 rounded-2xl hover:border-primary/40 flex flex-col justify-between"
               >
                 <div>
-                  <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary font-bold mb-4">
-                    {provider.name.substring(0, 2).toUpperCase()}
+                  <div className="flex justify-between items-start">
+                    <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary font-bold mb-4">
+                      {provider.name.substring(0, 2).toUpperCase()}
+                    </div>
+                    {/* Botones de acción rápidos */}
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => {
+                          setProviderToEdit(provider);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className="p-1.5 text-amber-500 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-all cursor-pointer inline-flex"
+                        title="Editar Proveedor"
+                      >
+                        <Edit size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteProvider(provider.id, provider.name)}
+                        className="p-1.5 text-rose-500 hover:text-rose-450 hover:bg-rose-500/10 rounded-lg transition-all cursor-pointer inline-flex"
+                        title="Eliminar Proveedor"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
                   <h4 className="text-base font-bold text-text-main line-clamp-2">{provider.name}</h4>
                   <p className="text-xs font-mono text-primary/95 dark:text-primary mt-1 uppercase tracking-wider">{provider.rif}</p>
@@ -185,6 +313,14 @@ export const Providers: React.FC = () => {
           </div>
         )}
       </div>
+
+      <ExportModal
+        isOpen={isExportOpen}
+        onClose={() => setIsExportOpen(false)}
+        dataType="providers"
+        data={filteredProviders}
+        providersList={providers}
+      />
     </div>
   );
 };
