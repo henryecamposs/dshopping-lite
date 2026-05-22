@@ -1,83 +1,91 @@
-# Guía de Despliegue (Deployment Skill) - dShopping Lite
+# Guía de Despliegue Genérico y Gestión de Ramas (Deployment Skill) - dShopping Lite
 
-Este documento detalla la metodología, configuración y los pasos operativos para compilar e implementar **dShopping Lite** en entornos de producción y pruebas utilizando **Cloudflare Pages**.
+Este documento detalla la metodología de integración continua, el control de ramas, la configuración y los pasos operativos para sincronizar, compilar e implementar **dShopping Lite** (o cualquier proyecto SPA Vite compatible) utilizando las ramas de control **`main`** y **`prod`** con el repositorio remoto **`origin`**.
 
 ---
 
-## 1. Arquitectura de Despliegue
-**dShopping Lite** es una aplicación de página única (SPA) compilada sobre **Vite** y **TypeScript**. Debido a que todo el procesamiento contable, exportación y conversión cambiaria ocurre en el navegador del cliente mediante integraciones directas con **Supabase** y la API oficial del **BCV**, el hosting idóneo es un proveedor de hosting estático global de baja latencia como **Cloudflare Pages**.
+## 1. Arquitectura del Flujo de Trabajo (Git Workflow)
+
+Para garantizar la estabilidad del software y aislar el desarrollo activo de la versión de producción, la arquitectura de despliegue se organiza bajo un flujo de dos ramas principales sincronizadas con el servidor central `origin`:
 
 ```mermaid
 graph TD
-    A[Código Fuente local / Git] -->|Build local| B(Carpeta /dist)
-    B -->|Script de Despliegue deploy.ps1| C[CLI Wrangler de Cloudflare]
-    C -->|Autenticación OAuth Web| D[Cloudflare Pages Global CDN]
-    D -->|Consumo Seguro RLS| E[Supabase PostgreSQL]
-    D -->|Live Sync Cambiario| F[DolarAPI - Tasa Oficial BCV]
+    A[Cambios Locales en main] -->|1. git push origin main| B[Rama origin/main]
+    A -->|2. git checkout prod| C[Rama local prod]
+    C -->|3. git merge main| D[Fusionar Avances en prod]
+    D -->|4. git push origin prod| E[Rama origin/prod]
+    D -->|5. npm run build| F(Carpeta /dist compilada)
+    F -->|6. Despliegue| G[Cloudflare Pages Global CDN]
 ```
 
----
-
-## 2. Variables de Entorno Requeridas
-Para que la aplicación funcione correctamente tras el despliegue, se deben configurar las siguientes variables de entorno en el panel de Cloudflare Pages o en el archivo local `.env`:
-
-| Variable de Entorno | Tipo | Descripción | Ejemplo de Valor |
-|---------------------|------|-------------|------------------|
-| `VITE_SUPABASE_URL` | String (URL) | Endpoint de conexión a la API REST de su proyecto Supabase. | `https://xxxxxx.supabase.co` |
-| `VITE_SUPABASE_ANON_KEY` | String (JWT) | Clave pública anónima de Supabase que valida políticas RLS. | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` |
-
-> [!IMPORTANT]
-> **Seguridad**: Nunca publique ni exponga en el repositorio claves del rol de administrador (`service_role` o `master_key`). La clave `VITE_SUPABASE_ANON_KEY` es totalmente segura para ser servida al cliente ya que todas las tablas están protegidas por **RLS (Seguridad a Nivel de Fila)** en Supabase.
+### Roles de las Ramas:
+*   **`main`**: Rama de desarrollo activo. Aquí se implementan y testean las nuevas características y correcciones de errores. Siempre es el punto de partida del desarrollo diario.
+*   **`prod`**: Rama de estabilidad de producción. Solo recibe código verificado proveniente de `main` mediante fusiones automáticas o manuales (`git merge`). Es la rama vinculada al entorno público.
+*   **`origin`**: Repositorio remoto centralizado (ej. GitHub) que actúa como la fuente de verdad de ambas ramas.
 
 ---
 
-## 3. Despliegue Local Interactivo (Windows PowerShell)
+## 2. Utilidad de Automatización Local (`scripts/deploy.ps1`)
 
-Dado que las herramientas de automatización en la nube o terminales sandboxed no permiten la redirección a navegadores web para completar la autenticación interactiva (OAuth) de Cloudflare, la mejor forma de desplegar manualmente es mediante la utilidad PowerShell incorporada en el proyecto.
+Para facilitar este ciclo a los desarrolladores en sistemas Windows, se incluye un script en PowerShell de carácter genérico y altamente interactivo en [scripts/deploy.ps1](file:///c:/Users/DELL/Documents/dPana%20Projects/dPana%20Compras/scripts/deploy.ps1).
 
-### Pasos para desplegar:
-1. Abra una consola de **PowerShell** en su computadora host.
-2. Navegue al directorio raíz del proyecto:
+### Cómo ejecutar la herramienta:
+1. Abra su consola de **PowerShell** en Windows.
+2. Navegue hasta la raíz de su proyecto:
    ```powershell
    cd "C:\Users\DELL\Documents\dPana Projects\dPana Compras"
    ```
-3. Ejecute el script de despliegue automatizado:
+3. Ejecute la utilidad:
    ```powershell
    .\scripts\deploy.ps1
    ```
-4. El script realizará las siguientes acciones:
-   - Verificará la estructura del proyecto.
-   - Compilará la versión de producción (`npm run build`), ejecutando validaciones estrictas de TypeScript.
-   - Validará la creación del directorio `dist/`.
-   - Le ofrecerá usar un token estático o abrirá una ventana de su navegador para autenticar su cuenta de Cloudflare de forma 100% segura.
-   - Desplegará la compilación a Cloudflare Pages de inmediato.
+
+### Menú de Opciones Disponibles:
+Al iniciar, la herramienta analiza de manera transparente su configuración de Git local, verifica si existen archivos sin confirmar para prevenir pérdidas accidentales de código, y le ofrece tres flujos de trabajo clave:
+
+#### Opción 1: Ciclo Completo (Git Sync + Compilación + Despliegue)
+*   **Ideal para**: Lanzamiento de nuevas versiones desde `main`.
+*   **Qué hace**: 
+    1. Empuja la rama de desarrollo activa hacia `origin/main`.
+    2. Cambia automáticamente el espacio de trabajo local a la rama `prod`.
+    3. Trae actualizaciones de `origin/prod` y realiza el *merge* de `main` de manera limpia.
+    4. Empuja la rama consolidada a `origin/prod`.
+    5. Ejecuta la compilación de producción (`npm run build`).
+    6. Despliega la carpeta de distribución (`dist/`) hacia Cloudflare Pages mediante Wrangler (solicitando inicio de sesión en navegador o cargando su token).
+    7. Restaura su terminal a la rama local `main` para que continúe trabajando sin interrupciones.
+
+#### Opción 2: Solo Sincronización Git (Git Sync)
+*   **Ideal para**: Sincronizar y alinear las ramas `main` y `prod` en el servidor remoto `origin` sin necesidad de generar compilados locales ni subir archivos al hosting.
+*   **Qué hace**: Realiza de forma secuencial todo el flujo de branches descrito en la opción 1 (push main -> checkout prod -> merge main -> push prod -> checkout main) y finaliza con éxito.
+
+#### Opción 3: Solo Despliegue Local (Compilar y Desplegar)
+*   **Ideal para**: Pruebas rápidas en caliente o despliegues locales urgentes cuando no se desea alterar el estado de las ramas Git en `origin`.
+*   **Qué hace**: Compila localmente el código actual mediante Vite y activa Wrangler para subir el directorio compilado de manera inmediata al hosting.
+
+---
+
+## 3. Variables de Entorno del Proyecto
+
+Cualquier proyecto SPA estático requiere la inyección de sus variables operativas en el hosting antes de la compilación. Para **dShopping Lite**, asegúrese de configurar las siguientes variables en el panel de su proveedor (Settings -> Environment variables en Cloudflare Pages):
+
+| Variable de Entorno | Tipo | Propósito |
+|---------------------|------|-----------|
+| `VITE_SUPABASE_URL` | URL | Endpoint API de su proyecto Supabase. |
+| `VITE_SUPABASE_ANON_KEY` | JWT Key | Clave pública anónima de acceso seguro con RLS. |
 
 ---
 
 ## 4. Despliegue Automatizado en CI/CD (GitHub Actions)
 
-Para implementar integración continua (CI/CD) de modo que cada commit en la rama de producción (`prod`) se despliegue automáticamente sin necesidad de scripts manuales:
-
-1. **Obtener un Token de API de Cloudflare**:
-   - Vaya a su Dashboard de Cloudflare -> *Mi perfil* -> *Tokens de API* -> *Crear Token*.
-   - Use la plantilla **Editar Cloudflare Pages**.
-   - Copie el token generado.
-
-2. **Configurar Secretos en GitHub**:
-   - En su repositorio en GitHub, vaya a *Settings* -> *Secrets and variables* -> *Actions*.
-   - Agregue un nuevo secreto con nombre `CLOUDFLARE_API_TOKEN` y pegue su token de Cloudflare.
-   - Agregue un secreto con nombre `CLOUDFLARE_ACCOUNT_ID` con el ID de su cuenta (visible en la barra lateral del panel de Cloudflare).
-
-3. **Crear Archivo de Workflow**:
-   Cree un archivo en `.github/workflows/deploy.yml` con el siguiente contenido:
+Si prefiere automatizar completamente el despliegue al momento de empujar código a `origin/prod` a través de GitHub, puede agregar un flujo de integración continua en su repositorio creando el archivo `.github/workflows/deploy.yml`:
 
 ```yaml
-name: Deploy dShopping Lite
+name: Deploy SPA Application
 
 on:
   push:
     branches:
-      - prod # Despliega automáticamente al empujar a esta rama
+      - prod # Gatilla el despliegue automático cuando se empuja a esta rama
 
 jobs:
   deploy:
@@ -89,7 +97,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-node: '20'
+          node-version: '20'
           cache: 'npm'
 
       - name: Install Dependencies
@@ -111,32 +119,16 @@ jobs:
 
 ---
 
-## 5. Resolución de Problemas Comunes (Troubleshooting)
+## 5. Resolución de Problemas y Diagnóstico (Troubleshooting)
 
-### Error: `In a non-interactive environment, it's necessary to set a CLOUDFLARE_API_TOKEN`
-* **Causa**: Intentó ejecutar `npx wrangler pages deploy` directamente desde una consola no interactiva o virtualizada.
-* **Solución**: Ejecute el script local interactivo `.\scripts\deploy.ps1` en su terminal de Windows nativa. De este modo, Wrangler podrá abrir su navegador web predeterminado para otorgar los permisos de inicio de sesión de forma segura y automatizada.
-
-### Error: `Build failed: tsc && vite build`
-* **Causa**: Errores de compilación de TypeScript o importaciones rotas en el código de frontend.
-* **Solución**: Corrija las inconsistencias de tipos reportadas en la consola antes de reintentar. Puede ejecutar localmente `npx tsc` para aislar los problemas de tipado sin necesidad de compilar todo el bundle.
-
-### Los datos de Supabase no cargan tras el despliegue
-* **Causa**: Falta configurar las variables de entorno `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` en el dashboard de Cloudflare Pages.
-* **Solución**: 
-  1. Inicie sesión en Cloudflare.
-  2. Vaya a *Workers & Pages* -> *dshopping-lite* -> *Settings* -> *Environment variables*.
-  3. Agregue ambas variables bajo la sección de **Production** y **Preview**.
-  4. Redespliegue el proyecto para que los valores sean inyectados en el bundle.
-
----
-
-## 6. Procedimiento de Rollback (Reversión Instantánea)
-Si un despliegue presenta problemas críticos en producción, Cloudflare Pages le permite revertir a una compilación previa de forma instantánea y sin compilar código:
-
-1. Inicie sesión en **Cloudflare**.
-2. Vaya a **Workers & Pages** y seleccione **dshopping-lite**.
-3. En la pestaña **Deployments**, localice el listado de versiones históricas desplegadas.
-4. Identifique la última versión estable (con estado de éxito anterior).
-5. Haga clic en los tres puntos `...` a la derecha de esa versión y elija **Rollback to this deployment** (o *Establecer como activa*).
-6. Cloudflare redirigirá el tráfico global a dicho bundle estático anterior en menos de 2 segundos.
+*   **Conflictos de Git durante el Merge**:
+    *   *Síntoma*: El script se detiene en el paso de fusión indicando que hay conflictos.
+    *   *Solución*: Abra su editor de código, resuelva los bloques de conflicto manualmente en la rama `prod`, confirme los cambios con `git commit`, y luego puede ejecutar la **Opción 3** del script para completar el despliegue del código reparado.
+*   **Error de Permiso de Ejecución de Scripts en PowerShell**:
+    *   *Síntoma*: PowerShell indica que la ejecución de scripts está deshabilitada en el sistema.
+    *   *Solución*: Abra PowerShell como Administrador y habilite la ejecución local mediante el comando:
+        ```powershell
+        Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope LocalMachine
+        ```
+*   **Rollback de Emergencia**:
+    *   Si se despliega una versión inestable en producción, inicie sesión en el dashboard de Cloudflare Pages, ingrese a su proyecto, navegue a **Deployments**, busque la versión previa que operaba correctamente, haga clic en los tres puntos y seleccione **Rollback to this deployment**. El tráfico global retornará a dicho bundle en menos de 2 segundos.
