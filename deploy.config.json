@@ -1,0 +1,15 @@
+{
+  "projectName": "dShopping Lite",
+  "buildCmd": "npm run build",
+  "buildDistDir": "dist",
+  "remote": "origin",
+  "branches": {
+    "dev": "main",
+    "prod": "prod"
+  },
+  "deployProvider": "cloudflare",
+  "cloudflare": {
+    "projectName": "dshopping-lite"
+  },
+  "customDeployCmd": "npx wrangler pages deploy dist --project-name=dshopping-lite"
+}

@@ -1,91 +1,110 @@
-# Guía de Despliegue Genérico y Gestión de Ramas (Deployment Skill) - dShopping Lite
+# Guía de Despliegue Agnostico y Gestión de Ramas (Agnostic Deployment Skill)
 
-Este documento detalla la metodología de integración continua, el control de ramas, la configuración y los pasos operativos para sincronizar, compilar e implementar **dShopping Lite** (o cualquier proyecto SPA Vite compatible) utilizando las ramas de control **`main`** y **`prod`** con el repositorio remoto **`origin`**.
+Este documento detalla la metodología de integración continua, el control de ramas y los pasos operativos del **Desplegador Agnostico y Sincronizador de Ramas**. 
+
+Esta suite está diseñada para ser **100% modular y reutilizable**. Puede copiar la carpeta `scripts/` y esta guía en **cualquier proyecto web** (React, Vite, Vue, Angular, Svelte, Next.js estático, o HTML/JS plano) para gestionar de forma automatizada las ramas Git, la compilación y la subida de archivos a su hosting.
 
 ---
 
-## 1. Arquitectura del Flujo de Trabajo (Git Workflow)
+## 1. El Motor de Configuración Agnostica (`deploy.config.json`)
 
-Para garantizar la estabilidad del software y aislar el desarrollo activo de la versión de producción, la arquitectura de despliegue se organiza bajo un flujo de dos ramas principales sincronizadas con el servidor central `origin`:
+Toda la lógica de ejecución del script está desacoplada del código fuente y se gestiona dinámicamente mediante el archivo [deploy.config.json](file:///c:/Users/DELL/Documents/dPana%20Projects/dPana%20Compras/deploy.config.json) en la raíz de su espacio de trabajo.
+
+### Esquema y Parámetros del JSON:
+```json
+{
+  "projectName": "dShopping Lite",
+  "buildCmd": "npm run build",
+  "buildDistDir": "dist",
+  "remote": "origin",
+  "branches": {
+    "dev": "main",
+    "prod": "prod"
+  },
+  "deployProvider": "cloudflare",
+  "cloudflare": {
+    "projectName": "dshopping-lite"
+  },
+  "customDeployCmd": "npx wrangler pages deploy dist --project-name=dshopping-lite"
+}
+```
+
+*   **`projectName`**: Nombre del proyecto a mostrar en la interfaz interactiva de la consola.
+*   **`buildCmd`**: Comando exacto de consola utilizado para compilar su aplicación (ej. `npm run build`, `npm run generate`, `vite build`, `tsc && vite build`).
+*   **`buildDistDir`**: Ruta relativa a la carpeta de salida generada tras la compilación (ej. `dist`, `build`, `out`, `public`).
+*   **`remote`**: Nombre del servidor remoto Git configurado en su proyecto (por defecto `origin`).
+*   **`branches`**:
+    *   **`dev`**: Nombre de su rama de desarrollo activa (ej. `main`, `master`, `dev`, `develop`).
+    *   **`prod`**: Nombre de su rama de producción estable (ej. `prod`, `production`, `release`).
+*   **`deployProvider`**: Plataforma de hosting de destino. Admite:
+    *   `"cloudflare"`: Activa el despliegue nativo mediante Wrangler para Cloudflare Pages utilizando los datos del objeto `"cloudflare"`.
+    *   `"custom"`: Ejecuta cualquier script o comando CLI personalizado definido en `"customDeployCmd"`.
+    *   `"none"`: Sincroniza las ramas en Git y compila el bundle local, pero omite la fase de subida a la nube.
+*   **`customDeployCmd`**: Comando personalizado de terminal si selecciona el proveedor `"custom"` (ej. `firebase deploy`, `vercel --prod`, `netlify deploy --dir=dist --prod`).
+
+---
+
+## 2. Flujo de Trabajo y Ramas Dinámicas
+
+Al ejecutar el script, toda la lógica de control de ramas de Git se adapta dinámicamente a las definidas en su archivo de configuración:
 
 ```mermaid
 graph TD
-    A[Cambios Locales en main] -->|1. git push origin main| B[Rama origin/main]
+    A[Cambios locales en Rama dev] -->|1. git push origin dev| B[Rama origin/dev]
     A -->|2. git checkout prod| C[Rama local prod]
-    C -->|3. git merge main| D[Fusionar Avances en prod]
+    C -->|3. git merge dev| D[Fusionar Avances en prod]
     D -->|4. git push origin prod| E[Rama origin/prod]
-    D -->|5. npm run build| F(Carpeta /dist compilada)
-    F -->|6. Despliegue| G[Cloudflare Pages Global CDN]
+    D -->|5. Exec buildCmd| F(Carpeta buildDistDir compilada)
+    F -->|6. Despliegue| G[Hosting - deployProvider]
 ```
-
-### Roles de las Ramas:
-*   **`main`**: Rama de desarrollo activo. Aquí se implementan y testean las nuevas características y correcciones de errores. Siempre es el punto de partida del desarrollo diario.
-*   **`prod`**: Rama de estabilidad de producción. Solo recibe código verificado proveniente de `main` mediante fusiones automáticas o manuales (`git merge`). Es la rama vinculada al entorno público.
-*   **`origin`**: Repositorio remoto centralizado (ej. GitHub) que actúa como la fuente de verdad de ambas ramas.
 
 ---
 
-## 2. Utilidad de Automatización Local (`scripts/deploy.ps1`)
+## 3. Instrucciones de Uso Local (Windows PowerShell)
 
-Para facilitar este ciclo a los desarrolladores en sistemas Windows, se incluye un script en PowerShell de carácter genérico y altamente interactivo en [scripts/deploy.ps1](file:///c:/Users/DELL/Documents/dPana%20Projects/dPana%20Compras/scripts/deploy.ps1).
-
-### Cómo ejecutar la herramienta:
-1. Abra su consola de **PowerShell** en Windows.
-2. Navegue hasta la raíz de su proyecto:
+1. Abra una consola de **PowerShell** en Windows.
+2. Navegue al directorio raíz del proyecto:
    ```powershell
-   cd "C:\Users\DELL\Documents\dPana Projects\dPana Compras"
+   cd "C:\path\to\your\any-web-project"
    ```
-3. Ejecute la utilidad:
+3. Ejecute el script:
    ```powershell
    .\scripts\deploy.ps1
    ```
 
-### Menú de Opciones Disponibles:
-Al iniciar, la herramienta analiza de manera transparente su configuración de Git local, verifica si existen archivos sin confirmar para prevenir pérdidas accidentales de código, y le ofrece tres flujos de trabajo clave:
-
-#### Opción 1: Ciclo Completo (Git Sync + Compilación + Despliegue)
-*   **Ideal para**: Lanzamiento de nuevas versiones desde `main`.
-*   **Qué hace**: 
-    1. Empuja la rama de desarrollo activa hacia `origin/main`.
-    2. Cambia automáticamente el espacio de trabajo local a la rama `prod`.
-    3. Trae actualizaciones de `origin/prod` y realiza el *merge* de `main` de manera limpia.
-    4. Empuja la rama consolidada a `origin/prod`.
-    5. Ejecuta la compilación de producción (`npm run build`).
-    6. Despliega la carpeta de distribución (`dist/`) hacia Cloudflare Pages mediante Wrangler (solicitando inicio de sesión en navegador o cargando su token).
-    7. Restaura su terminal a la rama local `main` para que continúe trabajando sin interrupciones.
-
-#### Opción 2: Solo Sincronización Git (Git Sync)
-*   **Ideal para**: Sincronizar y alinear las ramas `main` y `prod` en el servidor remoto `origin` sin necesidad de generar compilados locales ni subir archivos al hosting.
-*   **Qué hace**: Realiza de forma secuencial todo el flujo de branches descrito en la opción 1 (push main -> checkout prod -> merge main -> push prod -> checkout main) y finaliza con éxito.
-
-#### Opción 3: Solo Despliegue Local (Compilar y Desplegar)
-*   **Ideal para**: Pruebas rápidas en caliente o despliegues locales urgentes cuando no se desea alterar el estado de las ramas Git en `origin`.
-*   **Qué hace**: Compila localmente el código actual mediante Vite y activa Wrangler para subir el directorio compilado de manera inmediata al hosting.
+### Flujo de Autogeneración Automática:
+Si copia el script `deploy.ps1` en un nuevo proyecto que **no** tiene un archivo de configuración:
+1. El script detectará la ausencia de `deploy.config.json`.
+2. Leerá la propiedad `name` dentro de su `package.json` local (si existe).
+3. Generará un archivo `deploy.config.json` pre-rellenado con valores por defecto óptimos de inmediato.
+4. Podrá editar este archivo JSON en cualquier momento para adaptarlo a su infraestructura de hosting sin tocar una sola línea de código en el script.
 
 ---
 
-## 3. Variables de Entorno del Proyecto
+## 4. Opciones del Menú de Despliegue
 
-Cualquier proyecto SPA estático requiere la inyección de sus variables operativas en el hosting antes de la compilación. Para **dShopping Lite**, asegúrese de configurar las siguientes variables en el panel de su proveedor (Settings -> Environment variables en Cloudflare Pages):
+La terminal interactiva le presentará el siguiente menú de decisiones adaptadas a su proyecto:
 
-| Variable de Entorno | Tipo | Propósito |
-|---------------------|------|-----------|
-| `VITE_SUPABASE_URL` | URL | Endpoint API de su proyecto Supabase. |
-| `VITE_SUPABASE_ANON_KEY` | JWT Key | Clave pública anónima de acceso seguro con RLS. |
+*   **`[1] Ciclo Completo`**: Sincroniza su rama de desarrollo con `origin`, se cambia a producción, fusiona los avances locales, empuja la rama a `origin`, ejecuta su comando de compilación (`buildCmd`) y realiza la subida de los archivos de su directorio de distribución al proveedor de hosting configurado. Finalmente, le regresa automáticamente a su rama de desarrollo para resguardar su estado de trabajo.
+*   **`[2] Solo Sincronización Git`**: Ejecuta únicamente el flujo de fusión y alineación de ramas locales y remotas en `origin`. Ideal para sincronizar repositorios sin desplegar.
+*   **`[3] Solo Despliegue Local`**: Compila su aplicación local y la despliega directamente en el hosting. Ideal para realizar pruebas rápidas y *hotfixes* locales sin ensuciar el historial de Git.
 
 ---
 
-## 4. Despliegue Automatizado en CI/CD (GitHub Actions)
+## 5. Integración con CI/CD (GitHub Actions)
 
-Si prefiere automatizar completamente el despliegue al momento de empujar código a `origin/prod` a través de GitHub, puede agregar un flujo de integración continua en su repositorio creando el archivo `.github/workflows/deploy.yml`:
+Para configurar la integración continua genérica mediante GitHub Actions utilizando su archivo de configuración:
+
+1. Agregue sus variables y claves de hosting como secretos en el repositorio en GitHub (`Settings -> Secrets and variables -> Actions`).
+2. Cree el flujo de trabajo en `.github/workflows/deploy.yml`:
 
 ```yaml
-name: Deploy SPA Application
+name: Agnostic Deploy Pipeline
 
 on:
   push:
     branches:
-      - prod # Gatilla el despliegue automático cuando se empuja a esta rama
+      - prod # Reemplace con el nombre de su rama de producción
 
 jobs:
   deploy:
@@ -103,11 +122,8 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Compile and Build Bundle
-        env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-        run: npm run build
+      - name: Compile and Build
+        run: npm run build # Reemplace con su comando de compilación configurado
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
@@ -116,19 +132,3 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name=dshopping-lite
 ```
-
----
-
-## 5. Resolución de Problemas y Diagnóstico (Troubleshooting)
-
-*   **Conflictos de Git durante el Merge**:
-    *   *Síntoma*: El script se detiene en el paso de fusión indicando que hay conflictos.
-    *   *Solución*: Abra su editor de código, resuelva los bloques de conflicto manualmente en la rama `prod`, confirme los cambios con `git commit`, y luego puede ejecutar la **Opción 3** del script para completar el despliegue del código reparado.
-*   **Error de Permiso de Ejecución de Scripts en PowerShell**:
-    *   *Síntoma*: PowerShell indica que la ejecución de scripts está deshabilitada en el sistema.
-    *   *Solución*: Abra PowerShell como Administrador y habilite la ejecución local mediante el comando:
-        ```powershell
-        Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope LocalMachine
-        ```
-*   **Rollback de Emergencia**:
-    *   Si se despliega una versión inestable en producción, inicie sesión en el dashboard de Cloudflare Pages, ingrese a su proyecto, navegue a **Deployments**, busque la versión previa que operaba correctamente, haga clic en los tres puntos y seleccione **Rollback to this deployment**. El tráfico global retornará a dicho bundle en menos de 2 segundos.
