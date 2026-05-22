@@ -183,10 +183,13 @@
    Optimizado para generar informes ejecutivos limpios en PDF y papel
    ========================================================================= */
 @media print {
-  body {
+  html, body {
     background: #ffffff !important;
     color: #000000 !important;
     font-size: 10pt !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
   }
 
   /* Ocultar elementos innecesarios para impresión */
@@ -201,7 +204,13 @@
   .filters-container,
   .header-actions,
   .toast,
-  .modal-overlay {
+  .modal-overlay,
+  .flex.items-center.justify-between.px-6.py-4,
+  .bg-slate-50.border-b,
+  .space-y-6,
+  .space-y-8,
+  .fixed.inset-0.z-50:not(:has(.print-document-sheet)),
+  .glass-card:not(:has(.print-document-sheet)) {
     display: none !important;
   }
 
@@ -216,6 +225,42 @@
     padding: 0 !important;
     background: transparent !important;
     box-shadow: none !important;
+  }
+
+  /* Reset all parent wrappers of the printed document */
+  #root,
+  .fixed.inset-0.z-50:has(.print-document-sheet),
+  .fixed.inset-0.z-50:has(.print-document-sheet) > div,
+  .fixed.inset-0.z-50:has(.print-document-sheet) .flex-1 {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    max-width: none !important;
+    overflow: visible !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* Ajustar la hoja física de factura previsualizada */
+  .print-document-sheet {
+    display: block !important;
+    position: relative !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    overflow: visible !important;
   }
 
   /* Estilos específicos para la Tabla en PDF/Papel */
@@ -286,4 +331,35 @@
   .print-header {
     display: none !important;
   }
+}
+
+/* Custom premium scrollbar utility */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: oklch(0.541 0.247 292.951 / 0.2); /* oklch primary light color */
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.541 0.247 292.951 / 0.5); /* primary hover color */
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: oklch(0.491 0.241 292.588 / 0.25);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.491 0.241 292.588 / 0.55);
 }

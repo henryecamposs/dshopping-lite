@@ -4,6 +4,7 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { ExchangeRate } from '../types';
+import { useInvoiceStore } from './invoiceStore';
 
 interface ExchangeState {
   currentRate: ExchangeRate | null;
@@ -74,6 +75,22 @@ export const useExchangeStore = create<ExchangeState>((set, get) => ({
         .single();
 
       if (error) throw error;
+
+      // 1. Propagar la tasa a todas las facturas en la base de datos (Supabase)
+      const { error: invoicesError } = await supabase
+        .from('invoices')
+        .update({ exchange_rate_at_invoice: rateValue })
+        .eq('company_id', companyId);
+
+      if (invoicesError) throw invoicesError;
+
+      // 2. Sincronizar reactivamente el store de facturas en caliente (Zustand)
+      useInvoiceStore.setState((state) => ({
+        invoices: state.invoices.map((inv) => ({
+          ...inv,
+          exchange_rate_at_invoice: rateValue
+        }))
+      }));
 
       set({ currentRate: data, loading: false });
       return true;
