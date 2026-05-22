@@ -40,19 +40,16 @@ export default defineConfig({
         manualChunks(id) {
           // Fragmentar dependencias de terceros para maximizar el almacenamiento en caché
           if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom')) {
-              return 'vendor-react';
+            // Grandes librerías de exportación independientes (de carga bajo demanda/modal)
+            if (id.includes('xlsx')) {
+              return 'vendor-xlsx';
             }
-            if (id.includes('@supabase')) {
-              return 'vendor-supabase';
+            if (id.includes('jspdf') || id.includes('jspdf-autotable')) {
+              return 'vendor-pdf';
             }
-            if (id.includes('lucide-react')) {
-              return 'vendor-ui';
-            }
-            if (id.includes('zustand')) {
-              return 'vendor-state';
-            }
-            return 'vendor-others';
+            // Agrupar el resto de dependencias de node_modules en un único bloque de proveedores
+            // Esto evita cualquier referencia circular entre el core (React, Zustand, etc.) y dependencias anidadas
+            return 'vendor';
           }
         },
         // Nombres consistentes de archivos de salida para cacheado
