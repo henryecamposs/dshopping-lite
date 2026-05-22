@@ -1,0 +1,289 @@
+/* dShopping Lite - Core Style System & Dynamic Theming (Tailwind v4) */
+/* Soporte nativo para modo claro y oscuro con azul (principal), amarillo (secundario) y fucsia (acento) */
+
+@import "tailwindcss";
+
+@theme {
+  /* Registrar variables CSS en el tema de Tailwind v4 */
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  
+  --color-bg-main: var(--bg-main);
+  --color-text-main: var(--text-main);
+  --color-panel-main: var(--panel-main);
+  --color-border-main: var(--border-main);
+  --color-card-main: var(--card-main);
+  
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  
+  --radius-lg: var(--radius);
+  
+  --font-sans: 'Outfit', 'Inter', system-ui, sans-serif;
+}
+
+:root {
+  /* =========================================================================
+     MODO CLARO (Light Mode) - OKLCH Premium Violet/Lavender
+     ========================================================================= */
+  --radius: 0.5rem;
+  --background: oklch(1 0 180);
+  --foreground: oklch(0.129 0.027 261.671);
+  --muted: oklch(0.967 0.003 264.542);
+  --muted-foreground: oklch(0.38 0.02 264.365);
+  --popover: oklch(1 0 180);
+  --popover-foreground: oklch(0.129 0.027 261.671);
+  --card: oklch(1 0 180);
+  --card-foreground: oklch(0.129 0.027 261.671);
+  --border: oklch(0.928 0.006 264.531);
+  --input: oklch(0.928 0.006 264.531);
+  --primary: oklch(0.541 0.247 292.951);
+  --primary-foreground: oklch(0.984 0.002 247.84);
+  --secondary: oklch(0.967 0.003 264.542);
+  --secondary-foreground: oklch(0.21 0.032 264.652);
+  --accent: oklch(0.967 0.003 264.542);
+  --accent-foreground: oklch(0.21 0.032 264.652);
+  --destructive: oklch(0.637 0.208 25.326);
+  --destructive-foreground: oklch(0.984 0.002 247.84);
+  --ring: oklch(0.541 0.247 292.951);
+  --chart-1: oklch(0.677 0.157 35.19);
+  --chart-2: oklch(0.631 0.101 183.491);
+  --chart-3: oklch(0.379 0.044 225.539);
+  --chart-4: oklch(0.834 0.119 88.146);
+  --chart-5: oklch(0.783 0.126 58.749);
+
+  /* Mapeo para el sistema de diseño dCompras Lite */
+  --bg-main: var(--background);
+  --text-main: var(--foreground);
+  --panel-main: oklch(1 0 180 / 0.7);
+  --border-main: oklch(0.928 0.006 264.531 / 0.6);
+  --card-main: oklch(0.967 0.003 264.542 / 0.8);
+}
+
+/* Clase .dark para forzar el modo oscuro (soporta toggle manual en la app) */
+.dark {
+  /* =========================================================================
+     MODO OSCURO (Dark Mode) - OKLCH Premium Violet/Lavender
+     ========================================================================= */
+  --radius: 0.5rem;
+  --background: oklch(0.129 0.027 261.671);
+  --foreground: oklch(0.984 0.002 247.84);
+  --muted: oklch(0.278 0.03 256.848);
+  --muted-foreground: oklch(0.714 0.019 261.333);
+  --popover: oklch(0.129 0.027 261.671);
+  --popover-foreground: oklch(0.984 0.002 247.84);
+  --card: oklch(0.129 0.027 261.671);
+  --card-foreground: oklch(0.984 0.002 247.84);
+  --border: oklch(0.278 0.03 256.848);
+  --input: oklch(0.278 0.03 256.848);
+  --primary: oklch(0.491 0.241 292.588);
+  --primary-foreground: oklch(0.984 0.002 247.84);
+  --secondary: oklch(0.278 0.03 256.848);
+  --secondary-foreground: oklch(0.984 0.002 247.84);
+  --accent: oklch(0.278 0.03 256.848);
+  --accent-foreground: oklch(0.984 0.002 247.84);
+  --destructive: oklch(0.396 0.133 25.721);
+  --destructive-foreground: oklch(0.984 0.002 247.84);
+  --ring: oklch(0.491 0.241 292.588);
+  --chart-1: oklch(0.529 0.193 262.129);
+  --chart-2: oklch(0.698 0.134 165.463);
+  --chart-3: oklch(0.723 0.15 60.631);
+  --chart-4: oklch(0.619 0.204 312.728);
+  --chart-5: oklch(0.612 0.209 6.386);
+
+  /* Mapeo para el sistema de diseño dCompras Lite */
+  --bg-main: var(--background);
+  --text-main: var(--foreground);
+  --panel-main: oklch(0.129 0.027 261.671 / 0.45);
+  --border-main: oklch(0.278 0.03 256.848 / 0.4);
+  --card-main: oklch(0.278 0.03 256.848 / 0.35);
+}
+
+@layer base {
+  body {
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+}
+
+/* Efectos de Glassmorphism dinámicos según el tema */
+.glass-panel {
+  background: var(--panel-main);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-color: var(--border-main);
+}
+
+.glass-card {
+  background: var(--card-main);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-main);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 10px 30px -10px rgba(59, 130, 246, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Inputs Premium adaptables */
+.input-premium {
+  background-color: rgba(15, 23, 42, 0.04);
+  border: 1px solid var(--border-main);
+  color: var(--text-main);
+  @apply rounded-xl px-4 py-2.5 transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary;
+}
+
+.dark .input-premium {
+  background-color: rgba(15, 23, 42, 0.6);
+}
+
+/* Botones Premium con colores del tema */
+.btn-primary {
+  background-color: #facc15; /* yellow-400 nativo */
+  color: #020617; /* Slate 950 para contraste y legibilidad óptima */
+  @apply font-bold py-2.5 px-5 rounded-xl shadow-lg shadow-yellow-400/10 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer hover:bg-yellow-500 hover:shadow-yellow-500/20;
+}
+
+.btn-secondary {
+  border: 1px solid var(--border-main);
+  color: var(--text-main);
+  @apply hover:bg-slate-500/10 font-medium py-2.5 px-5 rounded-xl active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer;
+}
+
+.btn-danger {
+  @apply bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-medium py-2.5 px-5 rounded-xl shadow-lg shadow-rose-600/25 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer;
+}
+
+/* Degradados Decorativos */
+.text-gradient {
+  background-image: linear-gradient(to right, var(--primary), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* =========================================================================
+   ESTILOS DE IMPRESIÓN NATIVA (@media print)
+   Optimizado para generar informes ejecutivos limpios en PDF y papel
+   ========================================================================= */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 10pt !important;
+  }
+
+  /* Ocultar elementos innecesarios para impresión */
+  .no-print,
+  sidebar,
+  aside,
+  nav,
+  button,
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger,
+  .filters-container,
+  .header-actions,
+  .toast,
+  .modal-overlay {
+    display: none !important;
+  }
+
+  /* Eliminar scroll lateral y reestructurar contenedor principal */
+  .print-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  /* Estilos específicos para la Tabla en PDF/Papel */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin-top: 15px !important;
+    page-break-inside: auto !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    page-break-after: auto !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+    background-color: #f1f5f9 !important;
+    color: #000000 !important;
+  }
+
+  th, td {
+    border: 1px solid #cbd5e1 !important;
+    padding: 8px 10px !important;
+    text-align: left !important;
+    color: #000000 !important;
+    font-size: 9pt !important;
+  }
+
+  th {
+    font-weight: bold !important;
+  }
+
+  /* Forzar visibilidad de textos financieros clave */
+  .print-text-dark {
+    color: #000000 !important;
+  }
+  
+  /* Mantener estructura y alineación de columnas de montos */
+  .print-text-right {
+    text-align: right !important;
+  }
+
+  /* Encabezado ejecutivo del PDF */
+  .print-header {
+    display: block !important;
+    margin-bottom: 30px !important;
+    border-bottom: 2px solid #0f172a !important;
+    padding-bottom: 15px !important;
+  }
+
+  .print-header h1 {
+    font-size: 20pt !important;
+    font-weight: bold !important;
+    color: #0f172a !important;
+    margin: 0 !important;
+  }
+
+  .print-header p {
+    font-size: 10pt !important;
+    color: #475569 !important;
+    margin: 4px 0 0 0 !important;
+  }
+}
+
+/* Ocultar encabezado de impresión en pantalla */
+@media screen {
+  .print-header {
+    display: none !important;
+  }
+}
