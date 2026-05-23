@@ -4,6 +4,14 @@ Este archivo registra cronológicamente todas las actualizaciones, mejoras, corr
 
 ---
 
+## [1.2.0] - 2026-05-22
+### Añadido
+- **Módulo de Gastos Operativos**: Tabla dedicada `expenses` en base de datos Supabase con RLS. KPIs financieros contables, filtros avanzados y modal premium de registro con validación cambiaria obligatoria.
+- **Centro de Reportes Consolidados**: Estructuración del panel de reportes en pestañas (Tabs) unificadas para Facturas de Compras, Histórico de Pagos de Proveedores y Retenciones IVA/ISLR oficiales del SENIAT con exportación CSV específica.
+- **Habladores de Precios Premium**: Rediseño de grilla con glassmorphism interactivo y maquetación de impresión horizontal de 2 columnas con doble borde negro clásico de alta definición y membrete de empresa.
+- **Planificación de Turnos Persistente**: Store Zustand `shiftStore.ts` y tabla `staff_shifts` en Supabase. CRUD de guardias semanal, modal flotante de asignación y hoja de guardias horizontal formateada con rango de fechas dinámico.
+- **Menú de Navegación Organizado**: Creación de la categoría destacada `REPORTES` en `Layout.tsx` y ordenamiento lógico de todos los módulos.
+
 ## [1.1.1] - 2026-05-22
 ### Añadido
 - **Vista Previa de Impresión HTML**: Se incorporó el modal premium `PrintPreviewModal.tsx` que emula digitalmente una hoja física de papel tamaño Carta (Letter).

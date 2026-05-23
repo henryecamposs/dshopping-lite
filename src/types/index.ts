@@ -86,6 +86,15 @@ export interface InvoiceRetention {
   correlative_number?: string; // Ej: 20260500000001
   islr_concept?: string;
   created_at: string;
+  // Campos enriquecidos opcionalmente al consultar:
+  provider_id?: string;
+  provider_name?: string;
+  provider_rif?: string;
+  invoice_number?: string;
+  invoice_date?: string;
+  base_taxable?: number;
+  total_invoice?: number;
+  exchange_rate_at_invoice?: number;
 }
 
 export interface PaymentTransaction {
@@ -105,6 +114,7 @@ export interface PaymentTransaction {
   reference_number?: string;
   observation?: string;
   created_at: string;
+  exchange_rate_value?: number;
 }
 
 export interface StaffShift {
@@ -137,3 +147,23 @@ export interface CompanyPaymentMethod {
   document_id?: string; // RIF/CI
   created_at: string;
 }
+
+export interface Expense {
+  id: string;
+  company_id: string;
+  description: string;
+  category: string;
+  amount: number;
+  currency: 'USD' | 'VES';
+  exchange_rate_id: string;
+  payment_method_id?: string;
+  reference_number?: string;
+  expense_date: string;
+  created_at: string;
+  // Campos enriquecidos opcionalmente al consultar:
+  exchange_rate_value?: number;
+  payment_method_name?: string;
+}
+
+export type CreateExpenseInput = Omit<Expense, 'id' | 'company_id' | 'created_at'>;
+

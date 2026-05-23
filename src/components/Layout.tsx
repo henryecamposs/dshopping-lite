@@ -22,7 +22,8 @@ import {
   CalendarDays,
   Landmark,
   Clock,
-  CreditCard
+  CreditCard,
+  Coins
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 
@@ -190,6 +191,7 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { id: 'invoices', label: 'Facturas', icon: Receipt },
         { id: 'providers', label: 'Proveedores', icon: Users },
+        { id: 'expenses', label: 'Gastos', icon: Coins },
       ]
     },
     {
@@ -201,9 +203,14 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }
       ]
     },
     {
+      category: 'REPORTES',
+      items: [
+        { id: 'reports', label: 'Reportes', icon: FileText }
+      ]
+    },
+    {
       category: 'UTILIDADES',
       items: [
-        { id: 'reports', label: 'Reportes', icon: FileText },
         { id: 'price-tags', label: 'Habladores', icon: Tags },
         { id: 'shifts', label: 'Turnos', icon: CalendarDays }
       ]

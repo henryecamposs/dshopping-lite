@@ -8,6 +8,7 @@ import { Login } from './views/Login';
 import { Dashboard } from './views/Dashboard';
 import { Invoices } from './views/Invoices';
 import { Providers } from './views/Providers';
+import { Expenses } from './views/Expenses';
 import { Reports } from './views/Reports';
 import { PriceTagGenerator } from './views/Utilities/PriceTags/PriceTagGenerator';
 import { ShiftCalendar } from './views/Utilities/Shifts/ShiftCalendar';
@@ -50,6 +51,7 @@ export const App: React.FC = () => {
       {currentView === 'dashboard' && <Dashboard />}
       {currentView === 'invoices' && <Invoices />}
       {currentView === 'providers' && <Providers />}
+      {currentView === 'expenses' && <Expenses />}
       {currentView === 'reports' && <Reports />}
       {currentView === 'reconciliation' && <BankReconciliation />}
       {currentView === 'payment-history' && <PaymentHistory />}
