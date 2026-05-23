@@ -28,7 +28,7 @@ export const Invoices: React.FC = () => {
   const [isExportOpen, setIsExportOpen] = useState<boolean>(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState<boolean>(false);
   const [selectedInvoiceForPreview, setSelectedInvoiceForPreview] = useState<Invoice | null>(null);
-  
+
   // Nuevos estados para retenciones y pagos
   const [retentionInvoice, setRetentionInvoice] = useState<Invoice | null>(null);
   const [paymentInvoice, setPaymentInvoice] = useState<Invoice | null>(null);
@@ -46,10 +46,10 @@ export const Invoices: React.FC = () => {
   const handleMarkAsPaid = async (id: string, currentStatus: 'pending' | 'paid') => {
     const nextStatus = currentStatus === 'pending' ? 'paid' : 'pending';
     const isDark = document.documentElement.classList.contains('dark');
-    
+
     Swal.fire({
       title: nextStatus === 'paid' ? '¿Marcar como Pagada?' : '¿Marcar como Pendiente?',
-      text: nextStatus === 'paid' 
+      text: nextStatus === 'paid'
         ? 'Esta factura se marcará como pagada y se descontará del balance de deudas pendientes.'
         : 'Esta factura volverá a estar en estado pendiente de pago.',
       icon: 'question',
@@ -81,7 +81,7 @@ export const Invoices: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     const isDark = document.documentElement.classList.contains('dark');
-    
+
     Swal.fire({
       title: '¿Eliminar Factura?',
       text: '¿Está seguro de que desea ELIMINAR esta factura? Esta operación no se puede deshacer.',
@@ -217,11 +217,10 @@ export const Invoices: React.FC = () => {
                           {inv.invoice_retentions && inv.invoice_retentions.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1 font-sans">
                               {inv.invoice_retentions.map(r => (
-                                <span key={r.id} className={`px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider rounded ${
-                                  r.type === 'IVA'
+                                <span key={r.id} className={`px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider rounded ${r.type === 'IVA'
                                     ? 'bg-indigo-50 border border-indigo-200 text-indigo-700 dark:bg-indigo-950/20 dark:text-indigo-400 dark:border-indigo-900/40'
                                     : 'bg-purple-50 border border-purple-200 text-purple-700 dark:bg-purple-950/20 dark:text-purple-400 dark:border-purple-900/40'
-                                }`}>
+                                  }`}>
                                   {r.type} Ret
                                 </span>
                               ))}
@@ -234,11 +233,10 @@ export const Invoices: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 font-mono">
                           <div className="flex items-center gap-1.5">
-                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${
-                              isExpired 
-                                ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20' 
+                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${isExpired
+                                ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20'
                                 : 'bg-muted/50 text-muted-foreground'
-                            }`}>
+                              }`}>
                               {inv.due_date}
                             </span>
                           </div>
@@ -265,11 +263,10 @@ export const Invoices: React.FC = () => {
                                 handleMarkAsPaid(inv.id, inv.status);
                               }
                             }}
-                            className={`px-3 py-1 rounded-full text-xs font-bold uppercase cursor-pointer transition-all border ${
-                              inv.status === 'paid'
+                            className={`px-3 py-1 rounded-full text-xs font-bold uppercase cursor-pointer transition-all border ${inv.status === 'paid'
                                 ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20'
                                 : 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/20'
-                            }`}
+                              }`}
                           >
                             {inv.status === 'paid' ? 'Pagado' : 'Pendiente'}
                           </button>
@@ -288,8 +285,8 @@ export const Invoices: React.FC = () => {
                             </button>
                             {activeDropdownId === inv.id && (
                               <>
-                                <div 
-                                  className="fixed inset-0 z-10" 
+                                <div
+                                  className="fixed inset-0 z-10"
                                   onClick={() => setActiveDropdownId(null)}
                                 />
                                 <div className="absolute right-6 top-1/2 -translate-y-1/2 mt-1 w-32 bg-white dark:bg-slate-900 border border-border-main dark:border-indigo-950 rounded-xl shadow-xl z-20 py-1 font-semibold text-xs text-left animate-in fade-in slide-in-from-top-1 duration-100">
@@ -304,7 +301,7 @@ export const Invoices: React.FC = () => {
                                     <Printer size={14} />
                                     Imprimir
                                   </button>
-                                  
+
                                   {inv.status === 'pending' && (
                                     <>
                                       <button
@@ -388,7 +385,7 @@ export const Invoices: React.FC = () => {
         data={filteredInvoices}
         providersList={providers}
       />
-      
+
       <PrintPreviewModal
         isOpen={isPreviewOpen}
         onClose={() => {

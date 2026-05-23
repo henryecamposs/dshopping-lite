@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useInvoiceStore } from '../store/invoiceStore';
 import { ExportModal } from '../components/ExportModal';
-import { Plus, Users, Search, AlertCircle, Save, Edit, Trash2, ArrowLeft, Download, Landmark } from 'lucide-react';
+import { Plus, Users, Search, AlertCircle, Save, Edit, Trash2, ArrowLeft, Download, Landmark, Mail, Phone, CreditCard, Copy } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { ProviderBankModal } from '../components/providers/ProviderBankModal';
 
@@ -49,6 +49,15 @@ export const Providers: React.FC = () => {
       setIvaRetentionPercentage(75);
     }
   }, [providerToEdit]);
+
+  useEffect(() => {
+    if (providerToEdit) {
+      const current = providers.find((p) => p.id === providerToEdit.id);
+      if (current && JSON.stringify(current.bank_accounts) !== JSON.stringify(providerToEdit.bank_accounts)) {
+        setProviderToEdit(current);
+      }
+    }
+  }, [providers, providerToEdit]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -264,6 +273,77 @@ export const Providers: React.FC = () => {
               )}
             </div>
 
+            {/* Visualización y Gestión Directa de Cuentas Bancarias en Edición */}
+            {providerToEdit && (
+              <div className="sm:col-span-2 border-t border-border-main/50 pt-4 mt-2">
+                <div className="flex justify-between items-center mb-3">
+                  <h4 className="text-sm font-bold text-text-main flex items-center gap-2">
+                    <Landmark size={16} className="text-primary" />
+                    <span>Cuentas Bancarias Vinculadas</span>
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={() => setBankModalProvider(providerToEdit)}
+                    className="btn-secondary py-1 px-3 text-[11px] flex items-center gap-1.5 border border-border-main/60 bg-muted/30 hover:bg-muted/50 cursor-pointer rounded-lg"
+                  >
+                    <Plus size={12} />
+                    Gestionar Cuentas
+                  </button>
+                </div>
+
+                {(!providerToEdit.bank_accounts || providerToEdit.bank_accounts.length === 0) ? (
+                  <div className="text-xs text-muted-foreground italic bg-muted/10 p-3.5 rounded-xl border border-dashed border-border-main/30 text-center">
+                    Este proveedor no posee cuentas bancarias vinculadas. Presione "Gestionar Cuentas" para agregar la primera.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+                    {providerToEdit.bank_accounts.map((acc: any) => {
+                      const isZelle = acc.account_type === 'Zelle';
+                      const isPagoMovil = acc.account_type === 'Pago Móvil';
+                      
+                      let displayValue = '';
+                      if (acc.account_number) {
+                        const num = acc.account_number.replace(/\s/g, '');
+                        if (num.length >= 8) {
+                          displayValue = `${num.substring(0, 4)}...${num.substring(num.length - 4)}`;
+                        } else {
+                          displayValue = num;
+                        }
+                      } else if (acc.phone_number) {
+                        displayValue = acc.phone_number;
+                      } else if (acc.email) {
+                        displayValue = acc.email;
+                      }
+
+                      return (
+                        <div 
+                          key={acc.id} 
+                          className="flex items-center gap-2.5 p-3 rounded-xl bg-muted/15 border border-border-main/40"
+                        >
+                          {isZelle ? (
+                            <Mail size={14} className="text-purple-500 shrink-0" />
+                          ) : isPagoMovil ? (
+                            <Phone size={14} className="text-amber-500 shrink-0" />
+                          ) : (
+                            <CreditCard size={14} className="text-emerald-500 shrink-0" />
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-extrabold text-text-main leading-tight truncate">{acc.bank_name}</span>
+                              <span className="text-[8px] px-1 bg-muted/40 text-muted-foreground rounded uppercase tracking-widest leading-none py-0.5">{acc.account_type}</span>
+                            </div>
+                            <span className="text-[10px] text-muted-foreground font-mono leading-none block truncate mt-1">
+                              {displayValue}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="sm:col-span-2 flex justify-end gap-2 pt-2">
               <button
                 type="button"
@@ -309,57 +389,146 @@ export const Providers: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProviders.map((provider) => (
-              <div
-                key={provider.id}
-                className="glass-card p-5 rounded-2xl hover:border-primary/40 flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex justify-between items-start">
-                    <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary font-bold mb-4">
-                      {provider.name.substring(0, 2).toUpperCase()}
+            {filteredProviders.map((provider) => {
+              const bankAccounts = provider.bank_accounts || [];
+              return (
+                <div
+                  key={provider.id}
+                  className="glass-card p-5 rounded-2xl hover:border-primary/40 flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex justify-between items-start">
+                      <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary font-bold mb-4">
+                        {provider.name.substring(0, 2).toUpperCase()}
+                      </div>
+                      {/* Botones de acción rápidos */}
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => setBankModalProvider(provider)}
+                          className="p-1.5 text-indigo-500 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-all cursor-pointer inline-flex"
+                          title="Cuentas Bancarias"
+                        >
+                          <Landmark size={14} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setProviderToEdit(provider);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                          className="p-1.5 text-amber-500 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-all cursor-pointer inline-flex"
+                          title="Editar Proveedor"
+                        >
+                          <Edit size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteProvider(provider.id, provider.name)}
+                          className="p-1.5 text-rose-500 hover:text-rose-450 hover:bg-rose-500/10 rounded-lg transition-all cursor-pointer inline-flex"
+                          title="Eliminar Proveedor"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </div>
-                    {/* Botones de acción rápidos */}
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => setBankModalProvider(provider)}
-                        className="p-1.5 text-indigo-500 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-all cursor-pointer inline-flex"
-                        title="Cuentas Bancarias"
-                      >
-                        <Landmark size={14} />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setProviderToEdit(provider);
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                        className="p-1.5 text-amber-500 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-all cursor-pointer inline-flex"
-                        title="Editar Proveedor"
-                      >
-                        <Edit size={14} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteProvider(provider.id, provider.name)}
-                        className="p-1.5 text-rose-500 hover:text-rose-450 hover:bg-rose-500/10 rounded-lg transition-all cursor-pointer inline-flex"
-                        title="Eliminar Proveedor"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                    <h4 className="text-base font-bold text-text-main line-clamp-2">{provider.name}</h4>
+                    <p className="text-xs font-mono text-primary/95 dark:text-primary mt-1 uppercase tracking-wider">{provider.rif}</p>
+                    {provider.is_taxpayer && (
+                      <span className="inline-block mt-2 px-2 py-0.5 bg-rose-100 text-rose-800 border border-rose-200 text-[10px] font-bold rounded-md">
+                        CONTRIBUYENTE ESPECIAL ({provider.iva_retention_percentage}%)
+                      </span>
+                    )}
+
+                    {/* Sección de Cuentas de Pago */}
+                    <div className="mt-4 pt-3 border-t border-border-main/50 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">Cuentas de Pago</span>
+                        <span className="text-[9px] font-bold text-primary/80 bg-primary/5 px-1.5 py-0.5 rounded">
+                          {bankAccounts.length} {bankAccounts.length === 1 ? 'cuenta' : 'cuentas'}
+                        </span>
+                      </div>
+
+                      {bankAccounts.length === 0 ? (
+                        <div className="text-[11px] text-muted-foreground italic bg-muted/10 p-2.5 rounded-xl text-center border border-dashed border-border-main/30">
+                          Sin datos bancarios registrados.
+                        </div>
+                      ) : (
+                        <div className="space-y-1.5 max-h-28 overflow-y-auto custom-scrollbar pr-1">
+                          {bankAccounts.map((acc: any) => {
+                            const isZelle = acc.account_type === 'Zelle';
+                            const isPagoMovil = acc.account_type === 'Pago Móvil';
+                            
+                            let displayValue = '';
+                            if (acc.account_number) {
+                              const num = acc.account_number.replace(/\s/g, '');
+                              if (num.length >= 8) {
+                                displayValue = `${num.substring(0, 4)}...${num.substring(num.length - 4)}`;
+                              } else {
+                                displayValue = num;
+                              }
+                            } else if (acc.phone_number) {
+                              displayValue = acc.phone_number;
+                            } else if (acc.email) {
+                              displayValue = acc.email;
+                            }
+
+                            return (
+                              <div 
+                                key={acc.id} 
+                                className="group flex items-center justify-between p-1.5 rounded-lg bg-muted/15 border border-border-main/40 hover:bg-muted/30 transition-all"
+                              >
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  {isZelle ? (
+                                    <Mail size={12} className="text-purple-500 shrink-0" />
+                                  ) : isPagoMovil ? (
+                                    <Phone size={12} className="text-amber-500 shrink-0" />
+                                  ) : (
+                                    <CreditCard size={12} className="text-emerald-500 shrink-0" />
+                                  )}
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-[10px] font-black text-text-main leading-tight truncate">{acc.bank_name}</span>
+                                      <span className="text-[8px] px-1 bg-muted/40 text-muted-foreground rounded shrink-0 uppercase tracking-widest leading-none py-0.5">{acc.account_type}</span>
+                                    </div>
+                                    <span className="text-[9px] text-muted-foreground font-mono leading-none block truncate max-w-[140px]" title={acc.account_number || acc.phone_number || acc.email}>
+                                      {displayValue}
+                                    </span>
+                                  </div>
+                                </div>
+                                
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const textToCopy = acc.account_number || acc.phone_number || acc.email || '';
+                                    navigator.clipboard.writeText(textToCopy);
+                                    Swal.fire({
+                                      toast: true,
+                                      position: 'top-end',
+                                      icon: 'success',
+                                      title: '¡Copiado al portapapeles!',
+                                      showConfirmButton: false,
+                                      timer: 1500,
+                                      background: document.documentElement.classList.contains('dark') ? '#1e1b4b' : '#ffffff',
+                                      color: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#1f2937'
+                                    });
+                                  }}
+                                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-primary/10 rounded text-primary transition-all cursor-pointer shrink-0"
+                                  title="Copiar cuenta"
+                                >
+                                  <Copy size={10} />
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <h4 className="text-base font-bold text-text-main line-clamp-2">{provider.name}</h4>
-                  <p className="text-xs font-mono text-primary/95 dark:text-primary mt-1 uppercase tracking-wider">{provider.rif}</p>
-                  {provider.is_taxpayer && (
-                    <span className="inline-block mt-2 px-2 py-0.5 bg-rose-100 text-rose-800 border border-rose-200 text-[10px] font-bold rounded-md">
-                      CONTRIBUYENTE ESPECIAL ({provider.iva_retention_percentage}%)
-                    </span>
-                  )}
+                  <div className="mt-4 pt-3 border-t border-border-main text-[10px] text-muted-foreground font-mono">
+                    Registrado: {new Date(provider.created_at).toLocaleDateString()}
+                  </div>
                 </div>
-                <div className="mt-4 pt-3 border-t border-border-main text-[10px] text-muted-foreground font-mono">
-                  Registrado: {new Date(provider.created_at).toLocaleDateString()}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -374,7 +543,12 @@ export const Providers: React.FC = () => {
 
       <ProviderBankModal
         isOpen={bankModalProvider !== null}
-        onClose={() => setBankModalProvider(null)}
+        onClose={() => {
+          setBankModalProvider(null);
+          if (company?.id) {
+            fetchProviders(company.id);
+          }
+        }}
         companyId={company?.id || ''}
         providerId={bankModalProvider?.id || ''}
         providerName={bankModalProvider?.name || ''}

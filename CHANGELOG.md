@@ -4,6 +4,17 @@ Este archivo registra cronológicamente todas las actualizaciones, mejoras, corr
 
 ---
 
+## [1.2.1] - 2026-05-22
+### Añadido
+- **Datos Bancarios en Ficha de Proveedor**: Visualización directa y compacta de las cuentas bancarias (JSONB) en cada tarjeta del grid de proveedores, con iconos por tipo de cuenta (Zelle, Pago Móvil, Corriente/Ahorro), número enmascarado y botón de copiado rápido al portapapeles con notificación SweetAlert2.
+- **Panel de Cuentas en Formulario de Edición**: Sección "Cuentas Bancarias Vinculadas" integrada directamente en el panel Editar Proveedor, con visualización completa de todas las cuentas del proveedor y acceso rápido al modal de gestión sin necesidad de cerrar el formulario.
+- **Sincronización Reactiva Bidireccional**: El estado de las cuentas bancarias se actualiza automáticamente en tiempo real tanto en las fichas del grid como en el formulario de edición, al agregar, editar o eliminar cuentas desde el modal `ProviderBankModal`.
+
+### Corregido
+- **Visibilidad de Datos Bancarios**: Resuelto el problema donde las cuentas bancarias del proveedor solo eran accesibles vía modal, sin visibilidad directa en la interfaz principal. Ahora son visibles en el punto de contacto principal del proveedor.
+
+---
+
 ## [1.2.0] - 2026-05-22
 ### Añadido
 - **Módulo de Gastos Operativos**: Tabla dedicada `expenses` en base de datos Supabase con RLS. KPIs financieros contables, filtros avanzados y modal premium de registro con validación cambiaria obligatoria.
