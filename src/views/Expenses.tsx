@@ -526,11 +526,10 @@ export const Expenses: React.FC = () => {
                   <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">Número de Referencia</label>
                   <input
                     type="text"
-                    disabled={!paymentMethodId}
-                    className="input-premium w-full text-sm font-mono disabled:opacity-50 disabled:bg-muted/10"
-                    placeholder="Nro de Confirmación"
+                    className="input-premium w-full text-sm font-mono"
+                    placeholder="Nro de Confirmación / Recibo"
                     value={referenceNumber}
-                    onChange={(e) => setReferenceNumber(e.target.value.replace(/\D/g, ''))}
+                    onChange={(e) => setReferenceNumber(e.target.value)}
                   />
                 </div>
               </div>

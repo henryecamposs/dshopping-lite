@@ -13,6 +13,7 @@ interface ProviderBankAccountState {
 
   fetchAccounts: (companyId: string, providerId: string) => Promise<void>;
   addAccount: (accountData: Omit<ProviderBankAccount, 'id' | 'created_at'>) => Promise<boolean>;
+  updateAccount: (providerId: string, accountId: string, updatedData: Partial<ProviderBankAccount>) => Promise<boolean>;
   deleteAccount: (accountId: string) => Promise<boolean>;
 }
 
@@ -65,6 +66,28 @@ export const useProviderBankAccountStore = create<ProviderBankAccountState>((set
         .from('providers')
         .update({ bank_accounts: updatedAccounts })
         .eq('id', accountData.provider_id);
+
+      if (updateError) throw updateError;
+
+      set({ accounts: updatedAccounts, loading: false });
+      return true;
+    } catch (err: any) {
+      set({ error: err.message, loading: false });
+      return false;
+    }
+  },
+
+  updateAccount: async (providerId, accountId, updatedData) => {
+    set({ loading: true, error: null });
+    try {
+      const updatedAccounts = get().accounts.map((acc) =>
+        acc.id === accountId ? { ...acc, ...updatedData } : acc
+      );
+
+      const { error: updateError } = await supabase
+        .from('providers')
+        .update({ bank_accounts: updatedAccounts })
+        .eq('id', providerId);
 
       if (updateError) throw updateError;
 

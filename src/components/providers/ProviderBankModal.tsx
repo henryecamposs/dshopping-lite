@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useProviderBankAccountStore } from '../../store/providerBankAccountStore';
-import { X, Plus, Trash2, Landmark, Phone, Mail, User, CreditCard } from 'lucide-react';
+import { X, Plus, Trash2, Landmark, Phone, Mail, User, CreditCard, Edit } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 interface ProviderBankModalProps {
@@ -31,8 +31,9 @@ export const ProviderBankModal: React.FC<ProviderBankModalProps> = ({
   providerId,
   providerName
 }) => {
-  const { accounts, fetchAccounts, addAccount, deleteAccount, loading } = useProviderBankAccountStore();
+  const { accounts, fetchAccounts, addAccount, updateAccount, deleteAccount, loading } = useProviderBankAccountStore();
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
 
   // Form State
   const [bankName, setBankName] = useState(BANK_OPTIONS[0]);
@@ -60,6 +61,7 @@ export const ProviderBankModal: React.FC<ProviderBankModalProps> = ({
     setEmail('');
     setAccountHolder('');
     setDocumentId('');
+    setEditingAccountId(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -79,9 +81,7 @@ export const ProviderBankModal: React.FC<ProviderBankModalProps> = ({
       return;
     }
 
-    const success = await addAccount({
-      company_id: companyId,
-      provider_id: providerId,
+    const payload = {
       bank_name: bankName.toUpperCase(),
       account_type: accountType as any,
       account_number: (accountType === 'Corriente' || accountType === 'Ahorro') ? accountNumber : undefined,
@@ -89,14 +89,25 @@ export const ProviderBankModal: React.FC<ProviderBankModalProps> = ({
       email: accountType === 'Zelle' ? email : undefined,
       account_holder: accountHolder.trim() || undefined,
       document_id: documentId.trim().toUpperCase() || undefined
-    });
+    };
+
+    let success = false;
+    if (editingAccountId) {
+      success = await updateAccount(providerId, editingAccountId, payload);
+    } else {
+      success = await addAccount({
+        company_id: companyId,
+        provider_id: providerId,
+        ...payload
+      });
+    }
 
     if (success) {
       Swal.fire({
         toast: true,
         position: 'top-end',
         icon: 'success',
-        title: 'Cuenta registrada exitosamente.',
+        title: editingAccountId ? 'Cuenta bancaria actualizada.' : 'Cuenta registrada exitosamente.',
         showConfirmButton: false,
         timer: 2000,
         background: document.documentElement.classList.contains('dark') ? '#1e1b4b' : '#ffffff',
@@ -105,8 +116,20 @@ export const ProviderBankModal: React.FC<ProviderBankModalProps> = ({
       handleResetForm();
       setShowAddForm(false);
     } else {
-      Swal.fire('Error', 'No se pudo registrar la cuenta bancaria.', 'error');
+      Swal.fire('Error', editingAccountId ? 'No se pudo actualizar la cuenta bancaria.' : 'No se pudo registrar la cuenta bancaria.', 'error');
     }
+  };
+
+  const handleEditClick = (acc: any) => {
+    setEditingAccountId(acc.id);
+    setBankName(acc.bank_name);
+    setAccountType(acc.account_type);
+    setAccountNumber(acc.account_number || '');
+    setPhoneNumber(acc.phone_number || '');
+    setEmail(acc.email || '');
+    setAccountHolder(acc.account_holder || '');
+    setDocumentId(acc.document_id || '');
+    setShowAddForm(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -353,13 +376,22 @@ export const ProviderBankModal: React.FC<ProviderBankModalProps> = ({
                           </span>
                           <h5 className="font-extrabold text-sm text-text-main mt-1 tracking-tight">{acc.bank_name}</h5>
                         </div>
-                        <button
-                          onClick={() => handleDelete(acc.id)}
-                          className="p-1.5 text-rose-500 hover:text-rose-450 hover:bg-rose-500/10 rounded-lg transition-all cursor-pointer inline-flex"
-                          title="Eliminar Cuenta"
-                        >
-                          <Trash2 size={13} />
-                        </button>
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => handleEditClick(acc)}
+                            className="p-1.5 text-amber-500 hover:text-amber-450 hover:bg-amber-500/10 rounded-lg transition-all cursor-pointer inline-flex"
+                            title="Editar Cuenta"
+                          >
+                            <Edit size={13} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(acc.id)}
+                            className="p-1.5 text-rose-500 hover:text-rose-450 hover:bg-rose-500/10 rounded-lg transition-all cursor-pointer inline-flex"
+                            title="Eliminar Cuenta"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
                       </div>
 
                       {/* Detalles del canal bancario */}
