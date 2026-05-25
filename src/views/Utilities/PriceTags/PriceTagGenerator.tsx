@@ -3,8 +3,8 @@
 // Desarrollado por @Dev_React bajo la metodología SDD
 
 import React, { useState, useEffect } from 'react';
-import { useAuthStore } from '../../../store/authStore';
-import { useExchangeStore } from '../../../store/exchangeStore';
+import { useAuthStore } from '../../../store/useAuthStore';
+import { useExchangeStore } from '../../../store/useExchangeStore';
 import { PriceTagGrid } from './PriceTagGrid';
 import { 
   Tags, 
@@ -286,3 +286,4 @@ export const PriceTagGenerator: React.FC = () => {
     </div>
   );
 };
+

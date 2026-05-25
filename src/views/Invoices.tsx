@@ -2,9 +2,9 @@
 // Coordinación de la lista y el formulario de facturas con auto-cálculos financieros
 
 import React, { useState, useEffect } from 'react';
-import { useAuthStore } from '../store/authStore';
-import { useExchangeStore } from '../store/exchangeStore';
-import { useInvoiceStore } from '../store/invoiceStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { useExchangeStore } from '../store/useExchangeStore';
+import { useInvoiceStore } from '../store/useInvoiceStore';
 import { InvoiceForm } from '../components/InvoiceForm';
 import { ExportModal } from '../components/ExportModal';
 import { PrintPreviewModal } from '../components/PrintPreviewModal';
@@ -443,3 +443,4 @@ export const Invoices: React.FC = () => {
     </div>
   );
 };
+

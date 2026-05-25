@@ -3,10 +3,10 @@
 // Desarrollado por @Dev_React bajo la metodología SDD
 
 import React, { useState, useEffect } from 'react';
-import { useAuthStore } from '../store/authStore';
-import { useExpenseStore } from '../store/expenseStore';
-import { useCompanyPaymentMethodStore } from '../store/companyPaymentMethodStore';
-import { useExchangeStore } from '../store/exchangeStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { useExpenseStore } from '../store/useExpenseStore';
+import { useCompanyPaymentMethodStore } from '../store/useCompanyPaymentMethodStore';
+import { useExchangeStore } from '../store/useExchangeStore';
 import { 
   Plus, 
   Trash2, 
@@ -666,3 +666,4 @@ export const Expenses: React.FC = () => {
     </div>
   );
 };
+

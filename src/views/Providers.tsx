@@ -2,8 +2,8 @@
 // Gestión integral de proveedores asociados a la empresa
 
 import React, { useState, useEffect } from 'react';
-import { useAuthStore } from '../store/authStore';
-import { useInvoiceStore } from '../store/invoiceStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { useInvoiceStore } from '../store/useInvoiceStore';
 import { ExportModal } from '../components/ExportModal';
 import { Plus, Users, Search, AlertCircle, Save, Edit, Trash2, ArrowLeft, Download, Landmark, Mail, Phone, CreditCard, Copy } from 'lucide-react';
 import Swal from 'sweetalert2';
@@ -556,3 +556,4 @@ export const Providers: React.FC = () => {
     </div>
   );
 };
+

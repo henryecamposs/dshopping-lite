@@ -79,3 +79,4 @@ export const PriceTagGrid: React.FC<PriceTagGridProps> = ({ tags, currentRate, o
     </div>
   );
 };
+

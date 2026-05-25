@@ -1,7 +1,7 @@
 import React from 'react';
 import { X, Printer, ArrowLeft, Download, ShieldCheck, FileText, Calendar, Percent } from 'lucide-react';
-import { useAuthStore } from '../../store/authStore';
-import { useExchangeStore } from '../../store/exchangeStore';
+import { useAuthStore } from '../../store/useAuthStore';
+import { useExchangeStore } from '../../store/useExchangeStore';
 import { Invoice, InvoiceRetention, Provider } from '../../types';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -405,3 +405,4 @@ export const PrintRetentionModal: React.FC<PrintRetentionModalProps> = ({
     </div>
   );
 };
+

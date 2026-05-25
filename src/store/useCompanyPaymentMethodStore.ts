@@ -1,10 +1,10 @@
 // dShopping Lite - Company Payment Methods Store
 // Gestión del CRUD de métodos de pago propios de la empresa
-// Desarrollado por @Dev_Node bajo la metodología SDD
+// Refactorizado por @Dev_React bajo la metodología SDD
 
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
 import { CompanyPaymentMethod } from '../types';
+import { companyPaymentMethodService } from '../services/companyPaymentMethodService';
 
 interface CompanyPaymentMethodState {
   methods: CompanyPaymentMethod[];
@@ -24,14 +24,8 @@ export const useCompanyPaymentMethodStore = create<CompanyPaymentMethodState>((s
   fetchMethods: async (companyId) => {
     set({ loading: true, error: null });
     try {
-      const { data, error } = await supabase
-        .from('company_payment_methods')
-        .select('*')
-        .eq('company_id', companyId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      set({ methods: data || [], loading: false });
+      const data = await companyPaymentMethodService.fetchMethods(companyId);
+      set({ methods: data, loading: false });
     } catch (err: any) {
       set({ error: err.message, loading: false });
     }
@@ -40,14 +34,7 @@ export const useCompanyPaymentMethodStore = create<CompanyPaymentMethodState>((s
   addMethod: async (methodData) => {
     set({ loading: true, error: null });
     try {
-      const { data, error } = await supabase
-        .from('company_payment_methods')
-        .insert([methodData])
-        .select()
-        .single();
-
-      if (error) throw error;
-
+      const data = await companyPaymentMethodService.addMethod(methodData);
       set((state) => ({
         methods: [data, ...state.methods],
         loading: false
@@ -62,13 +49,7 @@ export const useCompanyPaymentMethodStore = create<CompanyPaymentMethodState>((s
   deleteMethod: async (methodId) => {
     set({ loading: true, error: null });
     try {
-      const { error } = await supabase
-        .from('company_payment_methods')
-        .delete()
-        .eq('id', methodId);
-
-      if (error) throw error;
-
+      await companyPaymentMethodService.deleteMethod(methodId);
       set((state) => ({
         methods: state.methods.filter((m) => m.id !== methodId),
         loading: false
@@ -80,3 +61,4 @@ export const useCompanyPaymentMethodStore = create<CompanyPaymentMethodState>((s
     }
   }
 }));
+

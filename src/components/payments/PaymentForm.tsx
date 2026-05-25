@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { usePaymentStore } from '../../store/paymentStore';
-import { useExchangeStore } from '../../store/exchangeStore';
-import { useProviderBankAccountStore } from '../../store/providerBankAccountStore';
-import { useCompanyPaymentMethodStore } from '../../store/companyPaymentMethodStore';
+import { usePaymentStore } from '../../store/usePaymentStore';
+import { useExchangeStore } from '../../store/useExchangeStore';
+import { useProviderBankAccountStore } from '../../store/useProviderBankAccountStore';
+import { useCompanyPaymentMethodStore } from '../../store/useCompanyPaymentMethodStore';
 import { CreditCard, Landmark, Coins, DollarSign, Wallet, X } from 'lucide-react';
 import Swal from 'sweetalert2';
 
@@ -272,3 +272,4 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
     </div>
   );
 };
+

@@ -2,12 +2,13 @@
 // Implementación con auto-cálculos financieros y cambiarios en tiempo real
 
 import React, { useState, useEffect } from 'react';
-import { useAuthStore } from '../store/authStore';
-import { useExchangeStore } from '../store/exchangeStore';
-import { useInvoiceStore } from '../store/invoiceStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { useExchangeStore } from '../store/useExchangeStore';
+import { useInvoiceStore } from '../store/useInvoiceStore';
 import { Save, Plus, AlertCircle, Calendar, ArrowLeft } from 'lucide-react';
 import { Invoice } from '../types';
 import Swal from 'sweetalert2';
+import { Select } from './ui/Select';
 
 interface InvoiceFormProps {
   invoiceToEdit?: Invoice | null;
@@ -293,18 +294,17 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoiceToEdit, onSucce
                 </div>
               </div>
             ) : (
-              <select
+              <Select
                 value={providerId}
                 onChange={(e) => setProviderId(e.target.value)}
-                className="input-premium w-full"
               >
-                <option value="">-- Seleccionar Proveedor --</option>
+                <option value="" className="bg-slate-900 text-slate-100">-- Seleccionar Proveedor --</option>
                 {providers.map((p) => (
-                  <option key={p.id} value={p.id}>
+                  <option key={p.id} value={p.id} className="bg-slate-900 text-slate-100">
                     {p.name} ({p.rif})
                   </option>
                 ))}
-              </select>
+              </Select>
             )}
           </div>
 
@@ -392,15 +392,15 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoiceToEdit, onSucce
             </div>
             <div className="space-y-2">
               <label className="text-sm font-semibold text-muted-foreground">IVA (%)</label>
-              <select
+              <Select
                 value={ivaPercentage}
                 onChange={(e) => setIvaPercentage(Number(e.target.value))}
-                className="input-premium w-full font-mono text-center"
+                className="font-mono text-center"
               >
-                <option value="16">16% (IVA Regular)</option>
-                <option value="8">8% (IVA Reducido)</option>
-                <option value="0">0% (Sin IVA)</option>
-              </select>
+                <option value="16" className="bg-slate-900 text-slate-100">16% (IVA Regular)</option>
+                <option value="8" className="bg-slate-900 text-slate-100">8% (IVA Reducido)</option>
+                <option value="0" className="bg-slate-900 text-slate-100">0% (Sin IVA)</option>
+              </Select>
             </div>
           </div>
 
@@ -491,3 +491,4 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoiceToEdit, onSucce
     </div>
   );
 };
+

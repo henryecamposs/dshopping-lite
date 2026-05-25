@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useAuthStore } from '../../store/authStore';
-import { useInvoiceStore } from '../../store/invoiceStore';
-import { usePaymentStore } from '../../store/paymentStore';
-import { useExchangeStore } from '../../store/exchangeStore';
+import { useAuthStore } from '../../store/useAuthStore';
+import { useInvoiceStore } from '../../store/useInvoiceStore';
+import { usePaymentStore } from '../../store/usePaymentStore';
+import { useExchangeStore } from '../../store/useExchangeStore';
 import { Landmark, ArrowRightLeft, FileText, CheckCircle2 } from 'lucide-react';
 
 export const BankReconciliation: React.FC = () => {
@@ -184,3 +184,4 @@ export const BankReconciliation: React.FC = () => {
     </div>
   );
 };
+

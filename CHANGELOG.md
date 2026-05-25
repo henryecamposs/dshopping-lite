@@ -4,6 +4,28 @@ Este archivo registra cronológicamente todas las actualizaciones, mejoras, corr
 
 ---
 
+## [1.3.0] - 2026-05-25
+### Añadido
+- **Módulo de Operaciones de Caja, Control de Vales y Cierres**:
+  - Tabla `cash_registers` para registrar las cajas físicas del local de forma independiente.
+  - Relación `cash_register_id` en la tabla `cash_closures` para asociar cierres de caja a la estación seleccionada.
+  - CRUD de Cajas y CRUD de Terminales POS unificados en una pestaña de administración con un **Doble Panel CRUD en Paralelo** interactivo.
+  - Conteo de efectivo bimonetario (USD / Bs) y arqueo interactivo por Terminales POS bancarios declarando los importes de cobro con tarjeta.
+- **Componente de UI Select Reutilizable y Premium (`Select.tsx`)**:
+  - Creación del componente `src/components/ui/Select.tsx` bajo `React.forwardRef` que admite todas las propiedades nativas de HTML y hereda estilos unificados de `.input-premium`.
+  - Migración y refactorización de selects nativos a `<Select>` en `CashClosure.tsx`, `InvoiceForm.tsx` y `RetentionForm.tsx` para estandarizar la estética.
+
+### Refactorizado
+- **Arquitectura de Desacoplamiento de Supabase**:
+  - Extracción de todas las operaciones directas de Supabase a una capa aislada de servicios (`src/services/`) con tipos robustos en TypeScript (ej. `authService.ts`, `invoiceService.ts`, `exchangeService.ts`, etc.).
+  - Renombrado de todos los stores Zustand al prefijo estándar `use` (`useAuthStore.ts`, `useInvoiceStore.ts`, etc.) y reescritura de 17 importaciones en cascada por toda la aplicación.
+
+### Corregido
+- **Contraste de Selects en Modo Oscuro (Windows/Chrome)**:
+  - Inyección de reglas CSS base en `index.css` aplicando `color-scheme: dark !important` y colores obligatorios para `select option` bajo `.dark`, eliminando el problema de visualización con opciones de fondo gris claro y texto blanco nativo.
+
+---
+
 ## [1.2.1] - 2026-05-22
 ### Añadido
 - **Datos Bancarios en Ficha de Proveedor**: Visualización directa y compacta de las cuentas bancarias (JSONB) en cada tarjeta del grid de proveedores, con iconos por tipo de cuenta (Zelle, Pago Móvil, Corriente/Ahorro), número enmascarado y botón de copiado rápido al portapapeles con notificación SweetAlert2.

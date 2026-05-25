@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useAuthStore } from '../store/authStore';
-import { usePaymentStore } from '../store/paymentStore';
-import { useExchangeStore } from '../store/exchangeStore';
-import { useInvoiceStore } from '../store/invoiceStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { usePaymentStore } from '../store/usePaymentStore';
+import { useExchangeStore } from '../store/useExchangeStore';
+import { useInvoiceStore } from '../store/useInvoiceStore';
 import { DollarSign, Search, Calendar, Landmark, Receipt, RefreshCw, FileSpreadsheet } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -176,3 +176,4 @@ export const PaymentHistory: React.FC = () => {
     </div>
   );
 };
+

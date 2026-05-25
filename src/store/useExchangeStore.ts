@@ -1,10 +1,11 @@
 // dShopping Lite - Zustand Exchange Rate Store
 // Gestión de la tasa cambiaria diaria y operaciones de conversión monetaria
+// Refactorizado por @Dev_React bajo la metodología SDD
 
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
 import { ExchangeRate } from '../types';
-import { useInvoiceStore } from './invoiceStore';
+import { exchangeService } from '../services/exchangeService';
+import { useInvoiceStore } from './useInvoiceStore';
 
 interface ExchangeState {
   currentRate: ExchangeRate | null;
@@ -33,27 +34,18 @@ export const useExchangeStore = create<ExchangeState>((set, get) => ({
   fetchCurrentRate: async (companyId) => {
     set({ loading: true, error: null });
     try {
-      const { data, error } = await supabase
-        .from('exchange_rates')
-        .select('*')
-        .eq('company_id', companyId)
-        .order('date', { ascending: false })
-        .limit(1);
-
-      if (error) throw error;
-
-      if (data && data.length > 0) {
-        set({ currentRate: data[0], loading: false });
-        return Number(data[0].rate_value);
+      const data = await exchangeService.fetchCurrentRate(companyId);
+      if (data) {
+        set({ currentRate: data, loading: false });
+        return Number(data.rate_value);
       } else {
-        // Tasa por defecto inicial si no hay ninguna registrada
         const defaultRateVal = 45.00;
         set({ currentRate: null, loading: false });
         return defaultRateVal;
       }
     } catch (err: any) {
       set({ error: err.message, loading: false });
-      return 45.00; // Tasa de respaldo ante errores
+      return 45.00;
     }
   },
 
@@ -61,50 +53,24 @@ export const useExchangeStore = create<ExchangeState>((set, get) => ({
   fetchHistory: async (companyId) => {
     set({ loading: true, error: null });
     try {
-      const { data, error } = await supabase
-        .from('exchange_rates')
-        .select('*')
-        .eq('company_id', companyId)
-        .order('date', { ascending: false });
-
-      if (error) throw error;
-      set({ history: data || [], loading: false });
+      const data = await exchangeService.fetchHistory(companyId);
+      set({ history: data, loading: false });
     } catch (err: any) {
       set({ error: err.message, loading: false });
     }
   },
 
-  // Registrar o actualizar la tasa cambiaria del día actual en Supabase
+  // Registrar o actualizar la tasa cambiaria del día actual
   updateCurrentRate: async (companyId, rateValue) => {
     set({ loading: true, error: null });
     try {
-      const todayStr = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
-      
-      // Intentar insertar la nueva tasa. En caso de que ya exista para la fecha (gracias al UNIQUE constraint),
-      // se realiza un upsert basado en company_id y date.
-      const { data, error } = await supabase
-        .from('exchange_rates')
-        .upsert({
-          company_id: companyId,
-          rate_value: rateValue,
-          date: todayStr
-        }, {
-          onConflict: 'company_id,date'
-        })
-        .select()
-        .single();
+      // 1. Guardar o actualizar la tasa cambiaria diaria en la BD
+      const data = await exchangeService.updateCurrentRate(companyId, rateValue);
 
-      if (error) throw error;
+      // 2. Propagar la tasa a todas las facturas en la base de datos (Supabase)
+      await exchangeService.propagateRateToInvoices(companyId, rateValue);
 
-      // 1. Propagar la tasa a todas las facturas en la base de datos (Supabase)
-      const { error: invoicesError } = await supabase
-        .from('invoices')
-        .update({ exchange_rate_at_invoice: rateValue })
-        .eq('company_id', companyId);
-
-      if (invoicesError) throw invoicesError;
-
-      // 2. Sincronizar reactivamente el store de facturas en caliente (Zustand)
+      // 3. Sincronizar reactivamente el store de facturas en caliente (Zustand)
       useInvoiceStore.setState((state) => ({
         invoices: state.invoices.map((inv) => ({
           ...inv,
@@ -120,14 +86,14 @@ export const useExchangeStore = create<ExchangeState>((set, get) => ({
     }
   },
 
-  // Obtener la tasa cambiaria oficial en tiempo real desde la API pública de Venezuela (DolarAPI)
+  // Obtener la tasa cambiaria oficial en tiempo real
   fetchLiveBCVRate: async () => {
     try {
       const response = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
       if (!response.ok) {
         throw new Error('Error al consultar el tipo de cambio oficial del BCV.');
       }
-      const data = await response.json();
+      const data = await response.ok ? await response.json() : null;
       if (data && typeof data.promedio === 'number') {
         return { success: true, rate: data.promedio };
       }
@@ -138,19 +104,12 @@ export const useExchangeStore = create<ExchangeState>((set, get) => ({
   },
 
   // LÓGICA DE CONVERSIÓN CAMBIARIA (Requisito Financiero)
-  // Multiplica cualquier monto en USD por la tasa configurada del día.
   convertToLocalCurrency: (amountInUSD) => {
     const rate = get().currentRate?.rate_value || 45.00;
-    
-    /* 
-      CÁLCULO DE CONVERSIÓN FINANCIERA:
-      Monto en Moneda Local (Bs) = Monto en USD * Tasa de Cambio (Bs/$)
-      Ejemplo: 100 USD * 45 Bs/$ = 4500 Bs.
-    */
     return Number((amountInUSD * rate).toFixed(2));
   },
 
-  // Utilidad de formateo de moneda venezolana (Bolívares - Bs.)
+  // Utilidad de formateo de moneda venezolana
   formatCurrencyLocal: (amountInBs) => {
     return new Intl.NumberFormat('es-VE', {
       style: 'currency',
@@ -160,7 +119,7 @@ export const useExchangeStore = create<ExchangeState>((set, get) => ({
     }).format(amountInBs);
   },
 
-  // Utilidad de formateo de moneda internacional (Dólares - USD)
+  // Utilidad de formateo de moneda internacional
   formatCurrencyUSD: (amountInUSD) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -170,3 +129,4 @@ export const useExchangeStore = create<ExchangeState>((set, get) => ({
     }).format(amountInUSD);
   }
 }));
+

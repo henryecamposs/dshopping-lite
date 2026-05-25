@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import { X, FileSpreadsheet, FileText, Download, AlertCircle } from 'lucide-react';
-import { useExchangeStore } from '../store/exchangeStore';
+import { useExchangeStore } from '../store/useExchangeStore';
 import { Invoice, Provider } from '../types';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
@@ -376,3 +376,4 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     </div>
   );
 };
+

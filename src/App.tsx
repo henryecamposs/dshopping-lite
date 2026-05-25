@@ -2,7 +2,7 @@
 // Orquestación del enrutamiento de vistas y restablecimiento de sesión
 
 import React, { useState, useEffect } from 'react';
-import { useAuthStore } from './store/authStore';
+import { useAuthStore } from './store/useAuthStore';
 import { Layout } from './components/Layout';
 import { Login } from './views/Login';
 import { Dashboard } from './views/Dashboard';
@@ -15,6 +15,7 @@ import { ShiftCalendar } from './views/Utilities/Shifts/ShiftCalendar';
 import { BankReconciliation } from './views/BankReconciliation';
 import { PaymentHistory } from './views/PaymentHistory';
 import { PaymentMethods } from './views/PaymentMethods';
+import { CashClosure } from './views/Cash/CashClosure';
 import { Building2 } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -58,8 +59,10 @@ export const App: React.FC = () => {
       {currentView === 'payment-methods' && <PaymentMethods />}
       {currentView === 'price-tags' && <PriceTagGenerator />}
       {currentView === 'shifts' && <ShiftCalendar />}
+      {currentView === 'cash-closure' && <CashClosure />}
     </Layout>
   );
 };
 
 export default App;
+

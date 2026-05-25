@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useAuthStore } from '../store/authStore';
-import { useCompanyPaymentMethodStore } from '../store/companyPaymentMethodStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { useCompanyPaymentMethodStore } from '../store/useCompanyPaymentMethodStore';
 import { Plus, Trash2, Landmark, Phone, Mail, User, CreditCard, ShieldCheck, ArrowLeft, Save, AlertCircle, Coins } from 'lucide-react';
 import Swal from 'sweetalert2';
 
@@ -415,3 +415,4 @@ export const PaymentMethods: React.FC = () => {
     </div>
   );
 };
+

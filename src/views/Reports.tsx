@@ -3,11 +3,11 @@
 // Integrado bajo la metodología SDD por @Dev_React
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { useAuthStore } from '../store/authStore';
-import { useExchangeStore } from '../store/exchangeStore';
-import { useInvoiceStore } from '../store/invoiceStore';
-import { usePaymentStore } from '../store/paymentStore';
-import { useRetentionStore } from '../store/retentionStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { useExchangeStore } from '../store/useExchangeStore';
+import { useInvoiceStore } from '../store/useInvoiceStore';
+import { usePaymentStore } from '../store/usePaymentStore';
+import { useRetentionStore } from '../store/useRetentionStore';
 import { ExportModal } from '../components/ExportModal';
 import { 
   FileSpreadsheet, 
@@ -890,3 +890,4 @@ export const Reports: React.FC = () => {
     </div>
   );
 };
+

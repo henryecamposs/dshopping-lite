@@ -2,9 +2,9 @@
 // Agrupación destacada de facturas que vencen hoy/manñana y resumen de cuentas por pagar
 
 import React, { useEffect, useState } from 'react';
-import { useAuthStore } from '../store/authStore';
-import { useExchangeStore } from '../store/exchangeStore';
-import { useInvoiceStore } from '../store/invoiceStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { useExchangeStore } from '../store/useExchangeStore';
+import { useInvoiceStore } from '../store/useInvoiceStore';
 import { PaymentForm } from '../components/payments/PaymentForm';
 import { Invoice } from '../types';
 import { 
@@ -418,3 +418,4 @@ export const Dashboard: React.FC = () => {
     </div>
   );
 };
+

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { useRetentionStore } from '../../store/retentionStore';
+import { useRetentionStore } from '../../store/useRetentionStore';
 import { Invoice } from '../../types';
-import { useExchangeStore } from '../../store/exchangeStore';
+import { useExchangeStore } from '../../store/useExchangeStore';
 import { Percent, ClipboardList, ShieldCheck } from 'lucide-react';
 import Swal from 'sweetalert2';
+import { Select } from '../ui/Select';
 
 interface RetentionFormProps {
   companyId: string;
@@ -100,28 +101,28 @@ export const RetentionForm: React.FC<RetentionFormProps> = ({
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">Tipo de Retención</label>
-          <select 
-            className="input-premium w-full text-sm py-2.5"
+          <Select 
+            className="text-sm"
             value={retentionType}
             onChange={(e) => setRetentionType(e.target.value as 'IVA' | 'ISLR')}
           >
-            <option value="IVA">Retención de IVA (SENIAT)</option>
-            <option value="ISLR">Retención de ISLR</option>
-          </select>
+            <option value="IVA" className="bg-slate-900 text-slate-100">Retención de IVA (SENIAT)</option>
+            <option value="ISLR" className="bg-slate-900 text-slate-100">Retención de ISLR</option>
+          </Select>
         </div>
 
         {retentionType === 'IVA' ? (
           <div className="space-y-4 animate-in fade-in duration-150">
             <div>
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">Porcentaje de Retención (IVA)</label>
-              <select 
-                className="input-premium w-full text-sm py-2.5"
+              <Select 
+                className="text-sm"
                 value={ivaPercentage}
                 onChange={(e) => setIvaPercentage(Number(e.target.value) as 75 | 100)}
               >
-                <option value={75}>75% (Por Defecto)</option>
-                <option value={100}>100% (Casos Especiales)</option>
-              </select>
+                <option value={75} className="bg-slate-900 text-slate-100">75% (Por Defecto)</option>
+                <option value={100} className="bg-slate-900 text-slate-100">100% (Casos Especiales)</option>
+              </Select>
             </div>
             
             <div className="bg-muted/15 border border-border-main/50 p-4 rounded-2xl text-xs space-y-2 font-semibold">
@@ -143,16 +144,16 @@ export const RetentionForm: React.FC<RetentionFormProps> = ({
           <div className="space-y-4 animate-in fade-in duration-150">
             <div>
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">Concepto ISLR</label>
-              <select 
-                className="input-premium w-full text-sm py-2.5"
+              <Select 
+                className="text-sm"
                 value={islrConcept}
                 onChange={(e) => setIslrConcept(e.target.value)}
               >
-                <option value="Servicios (2%)">Servicios a Personas Jurídicas (2%)</option>
-                <option value="Fletes (3%)">Fletes y Transportes (3%)</option>
-                <option value="Honorarios (5%)">Honorarios Profesionales (5%)</option>
-                <option value="Arrendamientos (5%)">Arrendamiento de Bienes (5%)</option>
-              </select>
+                <option value="Servicios (2%)" className="bg-slate-900 text-slate-100">Servicios a Personas Jurídicas (2%)</option>
+                <option value="Fletes (3%)" className="bg-slate-900 text-slate-100">Fletes y Transportes (3%)</option>
+                <option value="Honorarios (5%)" className="bg-slate-900 text-slate-100">Honorarios Profesionales (5%)</option>
+                <option value="Arrendamientos (5%)" className="bg-slate-900 text-slate-100">Arrendamiento de Bienes (5%)</option>
+              </Select>
             </div>
             
             <div>
@@ -206,3 +207,4 @@ export const RetentionForm: React.FC<RetentionFormProps> = ({
     </div>
   );
 };
+

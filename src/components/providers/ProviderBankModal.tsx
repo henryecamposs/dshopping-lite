@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useProviderBankAccountStore } from '../../store/providerBankAccountStore';
+import { useProviderBankAccountStore } from '../../store/useProviderBankAccountStore';
 import { X, Plus, Trash2, Landmark, Phone, Mail, User, CreditCard, Edit } from 'lucide-react';
 import Swal from 'sweetalert2';
 
@@ -434,3 +434,4 @@ export const ProviderBankModal: React.FC<ProviderBankModalProps> = ({
     </div>
   );
 };
+

@@ -308,3 +308,70 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- ('99999999-9999-9999-9999-999999999999', 'Empresa de Prueba, C.A.', 'J-12345678-9', 'DEMO-123456')
 -- ON CONFLICT DO NOTHING;
 
+-- =========================================================================
+-- 7. TABLAS PARA CONTROL DE CAJA Y ARQUEO DIARIO MULTIMONEDA
+-- =========================================================================
+
+-- Tabla de Cierres/Arqueos de Caja
+CREATE TABLE IF NOT EXISTS public.cash_closures (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    company_id UUID NOT NULL REFERENCES public.companies(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE RESTRICT,
+    opening_balance_usd NUMERIC(15, 2) NOT NULL DEFAULT 0.00 CHECK (opening_balance_usd >= 0),
+    closing_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    
+    -- Declaraciones Físicas de Caja (Declarado por el usuario)
+    declared_usd_cash NUMERIC(15, 2) NOT NULL DEFAULT 0.00 CHECK (declared_usd_cash >= 0),
+    declared_ves_cash NUMERIC(15, 2) NOT NULL DEFAULT 0.00 CHECK (declared_ves_cash >= 0),
+    declared_pos_total NUMERIC(15, 2) NOT NULL DEFAULT 0.00 CHECK (declared_pos_total >= 0),
+    declared_pagomovil NUMERIC(15, 2) NOT NULL DEFAULT 0.00 CHECK (declared_pagomovil >= 0),
+    declared_transfer NUMERIC(15, 2) NOT NULL DEFAULT 0.00 CHECK (declared_transfer >= 0),
+    
+    -- Totales y Conciliación Calculados
+    total_vouchers_amount NUMERIC(15, 2) NOT NULL DEFAULT 0.00 CHECK (total_vouchers_amount >= 0),
+    theoretical_total NUMERIC(15, 2) NOT NULL DEFAULT 0.00,
+    discrepancy_amount NUMERIC(15, 2) NOT NULL DEFAULT 0.00,
+    
+    -- Parámetros del Turno
+    exchange_rate_closure NUMERIC(12, 4) NOT NULL CHECK (exchange_rate_closure > 0),
+    observations TEXT,
+    status VARCHAR(20) DEFAULT 'open' CHECK (status IN ('open', 'closed')) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+-- Tabla de Vales de Caja (Egresos provisionales)
+CREATE TABLE IF NOT EXISTS public.cash_vouchers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    company_id UUID NOT NULL REFERENCES public.companies(id) ON DELETE CASCADE,
+    cash_register_id UUID REFERENCES public.cash_closures(id) ON DELETE SET NULL,
+    employee_name VARCHAR(255) NOT NULL,
+    amount_usd NUMERIC(15, 2) NOT NULL DEFAULT 0.00 CHECK (amount_usd >= 0),
+    amount_ves NUMERIC(15, 2) NOT NULL DEFAULT 0.00 CHECK (amount_ves >= 0),
+    exchange_rate NUMERIC(12, 4) NOT NULL CHECK (exchange_rate > 0),
+    concept TEXT NOT NULL,
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'consolidated')) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+-- Habilitar RLS
+ALTER TABLE public.cash_closures ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.cash_vouchers ENABLE ROW LEVEL SECURITY;
+
+-- Políticas para cash_closures
+CREATE POLICY "Aislamiento de cierres de caja por empresa"
+    ON public.cash_closures FOR ALL
+    USING (company_id = public.get_user_company_id(auth.uid()))
+    WITH CHECK (company_id = public.get_user_company_id(auth.uid()));
+
+-- Políticas para cash_vouchers
+CREATE POLICY "Aislamiento de vales de caja por empresa"
+    ON public.cash_vouchers FOR ALL
+    USING (company_id = public.get_user_company_id(auth.uid()))
+    WITH CHECK (company_id = public.get_user_company_id(auth.uid()));
+
+-- Índices de Rendimiento
+CREATE INDEX IF NOT EXISTS idx_cash_closures_company ON public.cash_closures(company_id);
+CREATE INDEX IF NOT EXISTS idx_cash_closures_date ON public.cash_closures(closing_date DESC);
+CREATE INDEX IF NOT EXISTS idx_cash_vouchers_closure ON public.cash_vouchers(cash_register_id);
+CREATE INDEX IF NOT EXISTS idx_cash_vouchers_company ON public.cash_vouchers(company_id);
+

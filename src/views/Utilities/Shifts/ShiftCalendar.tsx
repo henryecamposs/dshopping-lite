@@ -3,8 +3,8 @@
 // Desarrollado por @Dev_React bajo la metodología SDD
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useAuthStore } from '../../../store/authStore';
-import { useShiftStore } from '../../../store/shiftStore';
+import { useAuthStore } from '../../../store/useAuthStore';
+import { useShiftStore } from '../../../store/useShiftStore';
 import { StaffShift } from '../../../types';
 import { 
   CalendarDays, 
@@ -476,3 +476,4 @@ export const ShiftCalendar: React.FC = () => {
     </div>
   );
 };
+

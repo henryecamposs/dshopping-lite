@@ -112,6 +112,16 @@
   --card-main: oklch(0.278 0.03 256.848 / 0.35);
 }
 
+/* Corrección Premium de Contraste para Menús Desplegables Nativos en Modo Oscuro */
+.dark select {
+  color-scheme: dark !important;
+}
+
+.dark select option {
+  background-color: #0f172a !important; /* slate-900 */
+  color: #f8fafc !important; /* slate-50 */
+}
+
 @layer base {
   body {
     background-color: var(--bg-main);

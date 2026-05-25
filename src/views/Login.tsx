@@ -2,7 +2,7 @@
 // Diseño UI/UX premium con fondos de modo oscuro y paneles translúcidos
 
 import React, { useState } from 'react';
-import { useAuthStore } from '../store/authStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { Building2, Key, Mail, User, ShieldAlert, Award, FileText, CheckCircle } from 'lucide-react';
 
 export const Login: React.FC = () => {
@@ -464,3 +464,4 @@ export const Login: React.FC = () => {
     </div>
   );
 };
+

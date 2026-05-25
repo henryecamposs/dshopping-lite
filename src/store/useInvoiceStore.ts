@@ -1,9 +1,10 @@
 // dShopping Lite - Zustand Invoice Store
 // Gestión del estado global para facturas y proveedores con filtros avanzados
+// Refactorizado por @Dev_React bajo la metodología SDD
 
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
 import { Invoice, Provider } from '../types';
+import { invoiceService } from '../services/invoiceService';
 
 interface InvoiceFilters {
   providerId: string;
@@ -71,14 +72,8 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
   fetchProviders: async (companyId) => {
     set({ loading: true, error: null });
     try {
-      const { data, error } = await supabase
-        .from('providers')
-        .select('*')
-        .eq('company_id', companyId)
-        .order('name', { ascending: true });
-
-      if (error) throw error;
-      set({ providers: data || [], loading: false });
+      const data = await invoiceService.fetchProviders(companyId);
+      set({ providers: data, loading: false });
     } catch (err: any) {
       set({ error: err.message, loading: false });
     }
@@ -87,13 +82,7 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
   // 2. Crear Proveedor
   createProvider: async (companyId, name, rif, is_taxpayer = false, iva_retention_percentage) => {
     try {
-      const { data, error } = await supabase
-        .from('providers')
-        .insert({ company_id: companyId, name, rif: rif.trim().toUpperCase(), is_taxpayer, iva_retention_percentage })
-        .select()
-        .single();
-
-      if (error) throw error;
+      const data = await invoiceService.createProvider(companyId, name, rif, is_taxpayer, iva_retention_percentage);
       
       // Actualizar estado en memoria
       set((state) => ({
@@ -109,14 +98,7 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
   // 2.5. Actualizar Proveedor
   updateProvider: async (providerId, name, rif, is_taxpayer = false, iva_retention_percentage) => {
     try {
-      const { data, error } = await supabase
-        .from('providers')
-        .update({ name, rif: rif.trim().toUpperCase(), is_taxpayer, iva_retention_percentage })
-        .eq('id', providerId)
-        .select()
-        .single();
-
-      if (error) throw error;
+      const data = await invoiceService.updateProvider(providerId, name, rif, is_taxpayer, iva_retention_percentage);
       
       // Actualizar estado en memoria
       set((state) => ({
@@ -133,12 +115,7 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
   // 2.6. Eliminar Proveedor
   deleteProvider: async (providerId) => {
     try {
-      const { error } = await supabase
-        .from('providers')
-        .delete()
-        .eq('id', providerId);
-
-      if (error) throw error;
+      await invoiceService.deleteProvider(providerId);
       
       // Actualizar estado en memoria
       set((state) => ({
@@ -151,56 +128,21 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
     }
   },
 
-  // 3. Obtener Facturas (con JOIN para obtener el nombre del proveedor y retenciones)
+  // 3. Obtener Facturas
   fetchInvoices: async (companyId) => {
     set({ loading: true, error: null });
     try {
-      const { data, error } = await supabase
-        .from('invoices')
-        .select(`
-          *,
-          providers (
-            name
-          ),
-          invoice_retentions (
-            id,
-            invoice_id,
-            company_id,
-            type,
-            retention_percentage,
-            retention_amount,
-            correlative_number,
-            islr_concept,
-            created_at
-          )
-        `)
-        .eq('company_id', companyId)
-        .order('due_date', { ascending: true });
-
-      if (error) throw error;
-
-      // Transformar para aplanar el nombre del proveedor
-      const formattedInvoices: Invoice[] = (data || []).map((inv: any) => ({
-        ...inv,
-        provider_name: inv.providers?.name || 'Proveedor Desconocido',
-        invoice_retentions: inv.invoice_retentions || []
-      }));
-
-      set({ invoices: formattedInvoices, loading: false });
+      const data = await invoiceService.fetchInvoices(companyId);
+      set({ invoices: data, loading: false });
     } catch (err: any) {
       set({ error: err.message, loading: false });
     }
   },
 
   // 4. Crear Factura
-  // Los cálculos financieros y de fecha de vencimiento ocurren automáticamente en el trigger de PostgreSQL,
-  // pero los calculamos también en frontend en tiempo real para visualización previa del usuario.
   createInvoice: async (invoiceData) => {
     try {
-      // Nota: dejaremos que el trigger de Supabase haga los cálculos exactos y genere due_date,
-      // pero para la inserción calculamos los valores correspondientes en el frontend.
       const invoiceDateObj = new Date(invoiceData.invoice_date);
-      // Auto-cálculo de fecha de vencimiento: sumando días a la fecha de la factura
       const calculatedDueDate = new Date(invoiceDateObj.getTime() + invoiceData.credit_days * 24 * 60 * 60 * 1000)
         .toISOString()
         .split('T')[0];
@@ -217,30 +159,14 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
         total_invoice: totalInvoice
       };
 
-      const { data, error } = await supabase
-        .from('invoices')
-        .insert(payload)
-        .select(`
-          *,
-          providers (
-            name
-          )
-        `)
-        .single();
-
-      if (error) throw error;
-
-      const formattedNewInvoice: Invoice = {
-        ...data,
-        provider_name: data.providers?.name || 'Proveedor Desconocido'
-      };
+      const data = await invoiceService.createInvoice(payload);
 
       // Actualizar estado en memoria
       set((state) => ({
-        invoices: [...state.invoices, formattedNewInvoice].sort((a, b) => a.due_date.localeCompare(b.due_date))
+        invoices: [...state.invoices, data].sort((a, b) => a.due_date.localeCompare(b.due_date))
       }));
 
-      return { success: true, data: formattedNewInvoice };
+      return { success: true, data };
     } catch (err: any) {
       return { success: false, error: err.message };
     }
@@ -249,23 +175,20 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
   // 4.5. Actualizar Factura
   updateInvoice: async (invoiceId, invoiceData) => {
     try {
-      // 1. Obtener la factura existente en memoria para recuperar los valores actuales
       const existingInvoice = get().invoices.find(inv => inv.id === invoiceId);
       if (!existingInvoice) {
         throw new Error('Factura no encontrada en el estado local.');
       }
 
-      // 2. Calcular la fecha de vencimiento si cambió la fecha de factura o los días de crédito
       let calculatedDueDate = existingInvoice.due_date;
       if (invoiceData.invoice_date !== undefined || invoiceData.credit_days !== undefined) {
         const invDate = invoiceData.invoice_date ?? existingInvoice.invoice_date;
         const credDays = invoiceData.credit_days ?? existingInvoice.credit_days;
-        const invoiceDateObj = new Date(invDate + 'T12:00:00'); // Evitar desfase UTC
+        const invoiceDateObj = new Date(invDate + 'T12:00:00');
         invoiceDateObj.setDate(invoiceDateObj.getDate() + Number(credDays));
         calculatedDueDate = invoiceDateObj.toISOString().split('T')[0];
       }
 
-      // 3. Recalcular importes financieros si cambió base_taxable, base_exempt o iva_percentage
       let subTotal = existingInvoice.sub_total;
       let ivaAmount = existingInvoice.iva_amount;
       let totalInvoice = existingInvoice.total_invoice;
@@ -292,33 +215,16 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
         total_invoice: totalInvoice
       };
 
-      const { data, error } = await supabase
-        .from('invoices')
-        .update(payload)
-        .eq('id', invoiceId)
-        .select(`
-          *,
-          providers (
-            name
-          )
-        `)
-        .single();
-
-      if (error) throw error;
-
-      const formattedUpdatedInvoice: Invoice = {
-        ...data,
-        provider_name: data.providers?.name || 'Proveedor Desconocido'
-      };
+      const data = await invoiceService.updateInvoice(invoiceId, payload);
 
       // Actualizar estado en memoria
       set((state) => ({
         invoices: state.invoices.map((inv) =>
-          inv.id === invoiceId ? formattedUpdatedInvoice : inv
+          inv.id === invoiceId ? data : inv
         ).sort((a, b) => a.due_date.localeCompare(b.due_date))
       }));
 
-      return { success: true, data: formattedUpdatedInvoice };
+      return { success: true, data };
     } catch (err: any) {
       return { success: false, error: err.message };
     }
@@ -327,12 +233,7 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
   // 5. Actualizar Estado (Marcar como Pagada/Pendiente)
   updateInvoiceStatus: async (invoiceId, status) => {
     try {
-      const { error } = await supabase
-        .from('invoices')
-        .update({ status })
-        .eq('id', invoiceId);
-
-      if (error) throw error;
+      await invoiceService.updateInvoiceStatus(invoiceId, status);
 
       // Actualizar en memoria
       set((state) => ({
@@ -350,12 +251,7 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
   // 6. Eliminar Factura
   deleteInvoice: async (invoiceId) => {
     try {
-      const { error } = await supabase
-        .from('invoices')
-        .delete()
-        .eq('id', invoiceId);
-
-      if (error) throw error;
+      await invoiceService.deleteInvoice(invoiceId);
 
       set((state) => ({
         invoices: state.invoices.filter((inv) => inv.id !== invoiceId)
@@ -367,14 +263,10 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
     }
   },
 
-  // 7. Pagar Facturas en Lote (RPC)
+  // 7. Pagar Facturas en Lote
   payInvoicesBatch: async (invoiceIds) => {
     try {
-      const { error } = await supabase.rpc('pay_invoices_batch', {
-        p_invoice_ids: invoiceIds
-      });
-
-      if (error) throw error;
+      await invoiceService.payInvoicesBatch(invoiceIds);
 
       // Actualizar estado en memoria
       set((state) => ({
@@ -395,17 +287,14 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
     const todayStr = new Date().toISOString().split('T')[0];
 
     return invoices.filter((inv) => {
-      // Filtro por proveedor
       if (filters.providerId !== 'all' && inv.provider_id !== filters.providerId) {
         return false;
       }
 
-      // Filtro por estado de pago
       if (filters.status !== 'all' && inv.status !== filters.status) {
         return false;
       }
 
-      // Filtro por rango de fecha de vencimiento
       if (filters.dueDateRange !== 'all') {
         const invDate = new Date(inv.due_date);
         const today = new Date(todayStr);
@@ -440,7 +329,6 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
         }
       }
 
-      // Filtro de búsqueda global (Número de factura, control o proveedor)
       if (filters.searchTerm.trim() !== '') {
         const search = filters.searchTerm.toLowerCase();
         const numMatch = inv.invoice_number.toLowerCase().includes(search);
@@ -453,14 +341,12 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
     });
   },
 
-  // Dashboard Selector: Facturas que vencen Hoy
   getTodayInvoices: () => {
     const { invoices } = get();
     const todayStr = new Date().toISOString().split('T')[0];
     return invoices.filter((inv) => inv.due_date === todayStr && inv.status === 'pending');
   },
 
-  // Dashboard Selector: Facturas que vencen Mañana
   getTomorrowInvoices: () => {
     const { invoices } = get();
     const today = new Date();
@@ -469,3 +355,4 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
     return invoices.filter((inv) => inv.due_date === tomorrowStr && inv.status === 'pending');
   }
 }));
+

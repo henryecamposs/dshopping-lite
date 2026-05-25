@@ -2,8 +2,8 @@
 // Estructura visual premium con barra lateral, control cambiario del día y toggler de Modo Claro/Oscuro
 
 import React, { useState, useEffect } from 'react';
-import { useAuthStore } from '../store/authStore';
-import { useExchangeStore } from '../store/exchangeStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { useExchangeStore } from '../store/useExchangeStore';
 import { 
   LayoutDashboard, 
   Receipt, 
@@ -23,7 +23,8 @@ import {
   Landmark,
   Clock,
   CreditCard,
-  Coins
+  Coins,
+  Banknote
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 
@@ -199,7 +200,8 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }
       items: [
         { id: 'reconciliation', label: 'Cuentas Corrientes', icon: Landmark },
         { id: 'payment-history', label: 'Histórico de Pagos', icon: Clock },
-        { id: 'payment-methods', label: 'Métodos de Pago', icon: CreditCard }
+        { id: 'payment-methods', label: 'Métodos de Pago', icon: CreditCard },
+        { id: 'cash-closure', label: 'Control de Caja', icon: Banknote }
       ]
     },
     {
@@ -479,3 +481,4 @@ export const Layout: React.FC<LayoutProps> = ({ currentView, setView, children }
     </div>
   );
 };
+

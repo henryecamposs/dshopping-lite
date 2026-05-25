@@ -3,8 +3,8 @@
 
 import React from 'react';
 import { X, Printer, ArrowLeft, Receipt, DollarSign, Calendar, Clock, Download } from 'lucide-react';
-import { useAuthStore } from '../store/authStore';
-import { useExchangeStore } from '../store/exchangeStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { useExchangeStore } from '../store/useExchangeStore';
 import { Invoice, Provider } from '../types';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -484,3 +484,4 @@ export const PrintPreviewModal: React.FC<PrintPreviewModalProps> = ({
     </div>
   );
 };
+

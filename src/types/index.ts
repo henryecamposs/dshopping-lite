@@ -167,3 +167,7 @@ export interface Expense {
 
 export type CreateExpenseInput = Omit<Expense, 'id' | 'company_id' | 'created_at'>;
 
+export * from './cash';
+
+
+
